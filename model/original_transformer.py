@@ -17,128 +17,7 @@ from .fused_add_dropout_scale import (
     get_bias_dropout_add_scale, 
     modulate_fused,
 )
-##########################
-# Standard Attention
-##########################
-def standard_attention_varlen(qkv, cu_seqlens, max_seqlen, dropout_p=0., causal=False):
-    """
-    Standard PyTorch attention matching flash_attn_varlen_qkvpacked_func.
-    
-    Args:
-        qkv: [total_tokens, 3, num_heads, head_dim] - packed Q, K, V
-        cu_seqlens: [batch_size + 1] - cumulative sequence lengths (starts at 0)
-        max_seqlen: int - maximum sequence length in batch
-        dropout_p: float - dropout probability
-        causal: bool - apply causal masking
-    
-    Returns:
-        output: [total_tokens, num_heads, head_dim]
-    """
-    import torch
-    import torch.nn.functional as F
-    
-    # Get dimensions
-    total_tokens = qkv.shape[0]
-    num_heads = qkv.shape[2]
-    head_dim = qkv.shape[3]
-    batch_size = len(cu_seqlens) - 1
-    
-    # Convert from variable-length format to padded batch format
-    sequences = []
-    actual_lengths = []
-    
-    for i in range(batch_size):
-        start = cu_seqlens[i].item()  # Convert to Python int
-        end = cu_seqlens[i + 1].item()
-        seq_len = end - start
-        actual_lengths.append(seq_len)
-        
-        # Extract this sequence's qkv
-        seq_qkv = qkv[start:end]  # [seq_len, 3, num_heads, head_dim]
-        sequences.append(seq_qkv)
-    
-    # Pad all sequences to max_seqlen
-    padded_qkv = []
-    for seq in sequences:
-        seq_len = seq.shape[0]
-        if seq_len < max_seqlen:
-            # Pad with zeros
-            padding = torch.zeros(
-                max_seqlen - seq_len, 3, num_heads, head_dim,
-                dtype=seq.dtype, device=seq.device
-            )
-            seq_padded = torch.cat([seq, padding], dim=0)
-        else:
-            seq_padded = seq
-        padded_qkv.append(seq_padded)
-    
-    # Stack into batch: [batch_size, max_seqlen, 3, num_heads, head_dim]
-    qkv_batch = torch.stack(padded_qkv, dim=0)
-    
-    # Split into Q, K, V: each [batch_size, max_seqlen, num_heads, head_dim]
-    q, k, v = qkv_batch.unbind(dim=2)
-    
-    # Transpose for attention computation: [batch_size, num_heads, max_seqlen, head_dim]
-    q = q.transpose(1, 2)
-    k = k.transpose(1, 2)
-    v = v.transpose(1, 2)
-    
-    # Compute attention scores: [batch_size, num_heads, max_seqlen, max_seqlen]
-    scale = head_dim ** -0.5
-    attn_scores = torch.matmul(q, k.transpose(-2, -1)) * scale
-    
-    # Create attention mask to handle:
-    # 1. Padding (don't attend to padded positions)
-    # 2. Causal masking (don't attend to future positions) if requested
-    
-    # Padding mask: [batch_size, 1, 1, max_seqlen]
-    # True where we should NOT attend (padding positions)
-    padding_mask = torch.zeros(batch_size, 1, 1, max_seqlen, 
-                               dtype=torch.bool, device=qkv.device)
-    for i, length in enumerate(actual_lengths):
-        if length < max_seqlen:
-            padding_mask[i, 0, 0, length:] = True
-    
-    # Apply padding mask
-    attn_scores = attn_scores.masked_fill(padding_mask, float('-inf'))
-    
-    # Causal mask: [1, 1, max_seqlen, max_seqlen]
-    # True for positions that should be masked (future positions)
-    if causal:
-        causal_mask = torch.triu(
-            torch.ones(max_seqlen, max_seqlen, device=qkv.device, dtype=torch.bool),
-            diagonal=1  # Positions above diagonal are future
-        )
-        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0)  # [1, 1, seq, seq]
-        attn_scores = attn_scores.masked_fill(causal_mask, float('-inf'))
-    
-    # Softmax over keys: [batch_size, num_heads, max_seqlen, max_seqlen]
-    attn_weights = F.softmax(attn_scores, dim=-1)
-    
-    # Handle NaN from softmax of all -inf (can happen with padding + causal)
-    attn_weights = torch.nan_to_num(attn_weights, nan=0.0)
-    
-    # Apply dropout
-    if dropout_p > 0 and self.training:  # Note: only in training mode
-        attn_weights = F.dropout(attn_weights, p=dropout_p, training=True)
-    
-    # Apply attention to values: [batch_size, num_heads, max_seqlen, head_dim]
-    attn_output = torch.matmul(attn_weights, v)
-    
-    # Transpose back: [batch_size, max_seqlen, num_heads, head_dim]
-    attn_output = attn_output.transpose(1, 2)
-    
-    # Convert back to variable-length format: [total_tokens, num_heads, head_dim]
-    output_list = []
-    for i in range(batch_size):
-        seq_len = actual_lengths[i]
-        # Extract only the non-padded part
-        output_list.append(attn_output[i, :seq_len])  # [seq_len, num_heads, head_dim]
-    
-    # Concatenate all sequences: [total_tokens, num_heads, head_dim]
-    output = torch.cat(output_list, dim=0)
-    
-    return output
+
 
 def modulate(x, shift, scale):
     return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
@@ -298,10 +177,9 @@ class DDiTBlock(nn.Module):
             )
         else:
             cu_seqlens = seqlens.cumsum(-1)
-#        x = flash_attn_varlen_qkvpacked_func(
-#            qkv, cu_seqlens, seq_len, 0., causal=False)
-        x = standard_attention_varlen(
-            qkv, cu_seqlens, seq_len, 0., causal=False)        
+        x = flash_attn_varlen_qkvpacked_func(
+            qkv, cu_seqlens, seq_len, 0., causal=False)
+        
         x = rearrange(x, '(b s) h d -> b s (h d)', b=batch_size)
 
         x = bias_dropout_scale_fn(self.attn_out(x), None, gate_msa, x_skip, self.dropout)

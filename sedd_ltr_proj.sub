@@ -1,0 +1,68 @@
+#!/bin/bash
+#SBATCH --job-name=sedd_extract_ltr        # Job name
+#SBATCH --output=sedd_ltr_%j.out           # Standard output (%j = job ID)
+#SBATCH --error=sedd_ltr%j.err            # Standard error
+#SBATCH --time=09:00:00                # Time limit (2 hours for safety)
+#SBATCH --partition=gpu                # Partition name (adjust for your cluster)
+#SBATCH --gres=gpu:1                   # Request 1 GPU
+#SBATCH --cpus-per-task=4              # CPU cores
+#SBATCH --mem=32G                      # Memory (32GB should be plenty)
+#SBATCH --mail-type=ALL           # Email notification
+#SBATCH --mail-user=qh246@cornell.edu  # Your email
+#SBATCH -p compling
+# Print job info
+echo "=========================================="
+echo "SLURM Job ID: $SLURM_JOB_ID"
+echo "Node: $SLURM_NODELIST"
+echo "Start time: $(date)"
+echo "=========================================="
+echo ""
+
+# Load modules (adjust based on your cluster)
+# module load cuda/12.1  # Uncomment if needed
+# module load python/3.9  # Uncomment if needed
+
+# Activate conda environment
+source ~/.bashrc
+eval "$(conda shell.bash hook)"
+echo "acrivating conda"
+conda activate sedd
+
+# Print environment info
+echo "Python: $(which python)"
+echo "CUDA available: $(python -c 'import torch; print(torch.cuda.is_available())')"
+echo "GPU: $(python -c 'import torch; print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")')"
+echo ""
+
+# Change to working directory
+cd /home/qh246/Score-Entropy-Discrete-Diffusion  # Adjust to your path
+echo "Working directory: $(pwd)"
+echo ""
+
+# Run the extraction
+echo "Starting SEDD trajectory extraction..."
+echo "Input: sentences.csv"
+echo "Output: trajectory_results.csv"
+echo ""
+
+export PYTHONUNBUFFERED=1
+
+python -u sedd_ltr_proj.py \
+    --input sap_items_filler.csv \
+    --output sedd_ltr_proj_filler_test.csv
+
+# Check exit status
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "=========================================="
+    echo "✓ Job completed successfully!"
+    echo "End time: $(date)"
+    echo "=========================================="
+else
+    echo ""
+    echo "=========================================="
+    echo "✗ Job failed with exit code $?"
+    echo "End time: $(date)"
+    echo "=========================================="
+    exit 1
+fi
