@@ -15,7 +15,7 @@ def test_basic_extraction():
     print("="*60)
     
     # Short test sentence
-    test_sentence = "The cat sat on the mat."
+    test_sentence = "The horse raced past the barn fell."
     
     print(f"\nTest sentence: '{test_sentence}'")
     
