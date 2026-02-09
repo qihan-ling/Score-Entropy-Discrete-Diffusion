@@ -127,6 +127,40 @@ class SEDDSurprisalExtractor(SurprisalExtractor):
         
         print("✓ SEDD loaded")
     
+    def _forward_no_diagonal_masking(self, tokens, sigma):
+        """
+        Forward pass WITHOUT diagonal masking (line 401 of transformer.py).
+        
+        The model normally zeros out the logit of the input token:
+            x = torch.scatter(x, -1, indices[..., None], torch.zeros_like(x[..., :1]))
+        
+        This is correct for diffusion training (learn to denoise, not copy),
+        but WRONG for evaluation (we want P(target | input)).
+        
+        This method replicates the forward pass but skips that line.
+        """
+        indices = tokens
+        
+        # Replicate model.forward() from transformer.py lines 382-403
+        x = self.model.vocab_embed(indices)
+        c = F.silu(self.model.sigma_map(sigma))
+        rotary_cos_sin = self.model.rotary_emb(x)
+        
+        with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+            for i in range(len(self.model.blocks)):
+                x = self.model.blocks[i](x, rotary_cos_sin, c, seqlens=None)
+            x = self.model.output_layer(x, c)
+        
+        if self.model.scale_by_sigma:
+            assert self.model.absorb, "Haven't configured this to work."
+            esigm1_log = torch.where(sigma < 0.5, torch.expm1(sigma), sigma.exp() - 1).log().to(x.dtype)[:, None, None]
+            x = x - esigm1_log - np.log(x.shape[-1] - 1)
+        
+        # SKIP THIS LINE (diagonal zeroing):
+        # x = torch.scatter(x, -1, indices[..., None], torch.zeros_like(x[..., :1]))
+        
+        return x
+    
     def extract_surprisals(self, sentences):
         """Extract SEDD surprisal using specified method."""
         
@@ -147,15 +181,16 @@ class SEDDSurprisalExtractor(SurprisalExtractor):
         
         For each sentence:
         1. Encode full sentence
-        2. Run SEDD at t≈0 (sigma≈0)
+        2. Run SEDD at moderate sigma (not too close to 0)
         3. Extract surprisal for each position
         
-        This is most comparable to GPT-2's methodology.
+        Note: At sigma≈0, model is too confident (all probs→1).
+        Use moderate sigma for more meaningful probabilities.
         """
         all_results = []
         
-        # Small t and sigma (near-deterministic, like t≈0)
-        # Create proper tensor format for SEDD
+        # Use moderate sigma (not too small, not too large)
+        # sigma ~ 0.5 gives reasonable uncertainty
         
         with torch.no_grad():
             for sent_idx, sentence in enumerate(tqdm(sentences, desc=f"SEDD ({self.method})")):
@@ -165,34 +200,88 @@ class SEDDSurprisalExtractor(SurprisalExtractor):
                     if tokens.shape[1] > 1024:
                         tokens = tokens[:, :1024]
                     
-                    # Create proper sigma tensor for this batch
-                    eps = 1e-5
-                    t = torch.tensor([[eps]], device=self.device)  # [1, 1]
-                    sigma = self.noise_fn(t)[0]  # Get sigma from noise schedule
+                    # Use small sigma for evaluation (near-deterministic)
+                    # We're evaluating on CLEAN tokens, so we want the model's
+                    # best estimate of P(token | context)
+                    sigma = torch.tensor([0.001], device=self.device)
                     
-                    # Single forward pass using score_fn
-                    scores = self.score_fn(tokens, sigma)  # [1, seq_len, vocab_size]
+                    if sent_idx == 0:
+                        print(f"\n  Using sigma={sigma.item():.4f}")
                     
-                    # Convert score to probabilities (diffusion-specific!)
-                    # SEDD score != logits, need proper conversion
-                    stag_score = self.graph.staggered_score(scores, sigma)
-                    probs = stag_score * self.graph.transp_transition(tokens, sigma)
+                    # Call model WITHOUT diagonal masking
+                    # (The standard forward pass zeros out the target token's logit,
+                    #  which breaks probability evaluation!)
+                    logits = self._forward_no_diagonal_masking(tokens, sigma)  # [1, seq_len, vocab_size]
+                    
+                    if sent_idx == 0:
+                        print(f"    logits shape: {logits.shape}")
+                        print(f"    logits range: [{logits.min():.3f}, {logits.max():.3f}]")
+                    
+                    # Convert logits to probabilities
+                    probs = F.softmax(logits, dim=-1)  # [1, seq_len, vocab_size]
+                    
+                    # Debug: Check shapes and values
+                    if sent_idx == 0:
+                        print(f"\n  Debug info:")
+                        print(f"    probs shape: {probs.shape}")
+                        print(f"    probs sum per position: {probs.sum(dim=-1).mean():.4f}")
+                        print(f"    probs max: {probs.max():.4f}")
+                        print(f"    probs min: {probs.min():.4f}")
+                        
+                        # Show logit and prob for target tokens at first few positions
+                        print(f"    Target token logits/probs (before removing absorb):")
+                        for pos in range(1, min(6, tokens.shape[1])):
+                            target_token = tokens[0, pos].item()
+                            
+                            # Show BOTH: pos (sees current token) and pos-1 (doesn't see current)
+                            logit_at_pos = logits[0, pos, target_token].item()
+                            prob_at_pos = probs[0, pos, target_token].item()
+                            logit_at_prev = logits[0, pos-1, target_token].item()
+                            prob_at_prev = probs[0, pos-1, target_token].item()
+                            
+                            print(f"      Pos {pos}: token={target_token}")
+                            print(f"        At pos-1 (like GPT-2): logit={logit_at_prev:.3f}, prob={prob_at_prev:.6f}  ← USED")
+                            print(f"        At pos (sees current): logit={logit_at_pos:.3f}, prob={prob_at_pos:.6f}  ← Overconfident!")
                     
                     # Handle absorbing state (if present)
                     if self.graph.absorb:
-                        probs = probs[..., :-1]  # Remove absorbing state dimension
+                        # Remove absorbing state: 50257 -> 50256 tokens
+                        # Any token ID=50256 will be out of bounds and skipped
+                        probs = probs[..., :-1]
+                        if sent_idx == 0:
+                            print(f"    After removing absorb: {probs.shape}")
+                        
+                        # Renormalize after removing absorbing state
+                        probs = probs / probs.sum(dim=-1, keepdim=True)
+                        if sent_idx == 0:
+                            print(f"    After renormalization: sum={probs.sum(dim=-1).mean():.4f}")
                         
                 except Exception as e:
                     print(f"\n⚠️  Error on sentence {sent_idx}: {e}")
                     print(f"    Sentence: {sentence[:100]}...")
+                    import traceback
+                    traceback.print_exc()
                     print("⚠️  Skipping this sentence...")
                     continue
                 
                 # Compute surprisal for each position
-                for pos in range(tokens.shape[1]):
+                # START AT POSITION 1 to match GPT-2 (position 0 has no context)
+                for pos in range(1, tokens.shape[1]):
                     # Get probability of target token
                     target_token = tokens[0, pos].item()
-                    target_prob = probs[0, pos, target_token].item()
+                    
+                    # Check if target_token is within bounds (vocab size mismatch check)
+                    if target_token >= probs.shape[-1]:
+                        if sent_idx == 0:
+                            print(f"\n⚠️  Warning: token {target_token} out of bounds (vocab size {probs.shape[-1]})")
+                            print(f"    This is likely the absorbing state token - skipping")
+                        continue
+                    
+                    # KEY FIX: Use PREVIOUS position's prediction (like GPT-2)
+                    # At position i, the model has access to token_i's embedding
+                    # To match GPT-2 (which predicts token_i from position i-1),
+                    # we use probs[pos-1] to get P(token_pos | context_up_to_pos-1)
+                    target_prob = probs[0, pos-1, target_token].item()  # ← Changed from pos to pos-1
                     
                     # Clip to avoid log(0)
                     target_prob = max(target_prob, 1e-10)
@@ -248,8 +337,8 @@ class SEDDSurprisalExtractor(SurprisalExtractor):
                     
                     seq_len = tokens.shape[1]
                     
-                    # Storage for trajectory
-                    surprisals_over_time = {pos: [] for pos in range(seq_len)}
+                    # Storage for trajectory (starting from position 1, like GPT-2)
+                    surprisals_over_time = {pos: [] for pos in range(1, seq_len)}
                     weights_over_time = []
                     
                     # Run diffusion
@@ -260,18 +349,20 @@ class SEDDSurprisalExtractor(SurprisalExtractor):
                         # Forward pass at this timestep using score_fn
                         scores = self.score_fn(tokens, sigma)
                         
-                        # Convert score to probabilities (diffusion-specific!)
-                        stag_score = self.graph.staggered_score(scores, sigma)
-                        probs = stag_score * self.graph.transp_transition(tokens, sigma)
+                        # Convert score to probabilities (scores are logits)
+                        probs = F.softmax(scores, dim=-1)
                         
                         # Handle absorbing state
                         if self.graph.absorb:
                             probs = probs[..., :-1]
+                            # Renormalize after removing absorbing state
+                            probs = probs / probs.sum(dim=-1, keepdim=True)
                     
-                        # Compute surprisal for each position
-                        for pos in range(seq_len):
+                        # Compute surprisal for each position (starting from 1, like GPT-2)
+                        for pos in range(1, seq_len):
                             target_token = tokens[0, pos].item()
-                            target_prob = probs[0, pos, target_token].item()
+                            # Use pos-1 to match GPT-2 (predict token_pos from previous position)
+                            target_prob = probs[0, pos-1, target_token].item()
                             target_prob = max(target_prob, 1e-10)  # Clip to avoid log(0)
                             surprisal = -np.log(target_prob)
                             surprisals_over_time[pos].append(surprisal)
@@ -285,7 +376,8 @@ class SEDDSurprisalExtractor(SurprisalExtractor):
                     print("⚠️  Skipping this sentence...")
                     continue
                 
-                for pos in range(seq_len):
+                # Start from position 1 to match GPT-2 (position 0 has no context)
+                for pos in range(1, seq_len):
                     surprisals = surprisals_over_time[pos]
                     
                     if weighted:

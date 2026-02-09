@@ -301,7 +301,7 @@ class DDiTBlock(nn.Module):
 #        x = flash_attn_varlen_qkvpacked_func(
 #            qkv, cu_seqlens, seq_len, 0., causal=False)
         x = standard_attention_varlen(
-            qkv, cu_seqlens, seq_len, 0., causal=False)        
+            qkv, cu_seqlens, seq_len, 0., causal=True)        
         x = rearrange(x, '(b s) h d -> b s (h d)', b=batch_size)
 
         x = bias_dropout_scale_fn(self.attn_out(x), None, gate_msa, x_skip, self.dropout)
