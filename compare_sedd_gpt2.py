@@ -452,12 +452,57 @@ def compare_models(gpt2_results, sedd_results, output_prefix='comparison'):
     print(f"    ρ = {r_spearman:.4f}")
     print(f"    p = {p_spearman:.2e}")
     
+    # Within-sentence correlation (MOST IMPORTANT for pattern matching!)
+    print(f"\n  Within-sentence correlation:")
+    within_sentence_corrs = []
+    for sent_idx in merged['sentence_idx'].unique():
+        sent_data = merged[merged['sentence_idx'] == sent_idx]
+        if len(sent_data) >= 3:  # Need at least 3 points for correlation
+            try:
+                r, _ = pearsonr(sent_data['surprisal_gpt2'], sent_data['surprisal_sedd'])
+                if not np.isnan(r):
+                    within_sentence_corrs.append(r)
+            except:
+                pass
+    
+    if within_sentence_corrs:
+        mean_within = np.mean(within_sentence_corrs)
+        median_within = np.median(within_sentence_corrs)
+        print(f"    Mean within-sentence r = {mean_within:.4f}")
+        print(f"    Median within-sentence r = {median_within:.4f}")
+        print(f"    (Averaged over {len(within_sentence_corrs)} sentences)")
+        print(f"    → This measures whether models agree on RELATIVE difficulty")
+        print(f"       within each sentence (ignoring absolute magnitude)")
+    
+    # Z-scored (normalized) surprisal correlation
+    print(f"\n  Normalized surprisal correlation:")
+    merged['surprisal_gpt2_z'] = merged.groupby('sentence_idx')['surprisal_gpt2'].transform(
+        lambda x: (x - x.mean()) / x.std() if x.std() > 0 else 0
+    )
+    merged['surprisal_sedd_z'] = merged.groupby('sentence_idx')['surprisal_sedd'].transform(
+        lambda x: (x - x.mean()) / x.std() if x.std() > 0 else 0
+    )
+    
+    # Remove NaN/inf from z-scores
+    valid_mask = np.isfinite(merged['surprisal_gpt2_z']) & np.isfinite(merged['surprisal_sedd_z'])
+    if valid_mask.sum() > 0:
+        r_normalized, p_normalized = pearsonr(
+            merged.loc[valid_mask, 'surprisal_gpt2_z'],
+            merged.loc[valid_mask, 'surprisal_sedd_z']
+        )
+        print(f"    r = {r_normalized:.4f}")
+        print(f"    p = {p_normalized:.2e}")
+        print(f"    → This removes magnitude differences, focuses on patterns")
+    
     # Save merged data
     merged.to_csv(f'{output_prefix}_merged.csv', index=False)
     print(f"\n✓ Saved merged data: {output_prefix}_merged.csv")
     
     # Create visualizations
     _create_visualizations(merged, output_prefix)
+    
+    # Create example sentence trajectory plots
+    _plot_example_trajectories(merged, output_prefix)
     
     # Analysis by word characteristics
     _analyze_by_characteristics(merged, output_prefix)
@@ -539,6 +584,92 @@ def _create_visualizations(merged, output_prefix):
     plt.tight_layout()
     plt.savefig(f'{output_prefix}_plots.png', dpi=150, bbox_inches='tight')
     print(f"✓ Saved plots: {output_prefix}_plots.png")
+    plt.close()
+
+
+def _plot_example_trajectories(merged, output_prefix, n_examples=6):
+    """
+    Plot surprisal trajectories for example sentences.
+    This shows whether models agree on RELATIVE patterns within sentences.
+    """
+    # Select diverse example sentences
+    # Get sentences with varying lengths and correlation patterns
+    sentence_stats = []
+    for sent_idx in merged['sentence_idx'].unique():
+        sent_data = merged[merged['sentence_idx'] == sent_idx].sort_values('word_position')
+        if len(sent_data) >= 4:  # At least 4 words
+            try:
+                r, _ = pearsonr(sent_data['surprisal_gpt2'], sent_data['surprisal_sedd'])
+                if not np.isnan(r):
+                    sentence_stats.append({
+                        'sent_idx': sent_idx,
+                        'length': len(sent_data),
+                        'correlation': r,
+                        'sentence': sent_data.iloc[0]['sentence']
+                    })
+            except:
+                pass
+    
+    if not sentence_stats:
+        return
+    
+    # Sort by correlation and pick diverse examples
+    sentence_stats = pd.DataFrame(sentence_stats).sort_values('correlation')
+    
+    # Pick: 2 low correlation, 2 medium, 2 high
+    n_per_group = n_examples // 3
+    examples = []
+    examples.extend(sentence_stats.head(n_per_group)['sent_idx'].tolist())  # Low
+    examples.extend(sentence_stats.iloc[len(sentence_stats)//2 - n_per_group//2:
+                                        len(sentence_stats)//2 + n_per_group//2]['sent_idx'].tolist())  # Medium
+    examples.extend(sentence_stats.tail(n_per_group)['sent_idx'].tolist())  # High
+    
+    # Create plot
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+    axes = axes.flatten()
+    
+    for i, sent_idx in enumerate(examples[:n_examples]):
+        ax = axes[i]
+        sent_data = merged[merged['sentence_idx'] == sent_idx].sort_values('word_position')
+        
+        # Normalize within sentence for comparison
+        gpt2_norm = (sent_data['surprisal_gpt2'] - sent_data['surprisal_gpt2'].mean()) / sent_data['surprisal_gpt2'].std()
+        sedd_norm = (sent_data['surprisal_sedd'] - sent_data['surprisal_sedd'].mean()) / sent_data['surprisal_sedd'].std()
+        
+        positions = sent_data['word_position'].values
+        
+        # Plot normalized values
+        ax.plot(positions, gpt2_norm, 'o-', label='GPT-2', linewidth=2, markersize=6)
+        ax.plot(positions, sedd_norm, 's-', label='SEDD', linewidth=2, markersize=6)
+        
+        # Add word labels
+        for pos, word, y_gpt2, y_sedd in zip(positions, sent_data['word'], gpt2_norm, sedd_norm):
+            # Alternate labels above/below to avoid overlap
+            y_label = max(y_gpt2, y_sedd) + 0.3
+            ax.text(pos, y_label, word[:8], fontsize=8, ha='center', rotation=45)
+        
+        # Compute correlation
+        try:
+            r, _ = pearsonr(sent_data['surprisal_gpt2'], sent_data['surprisal_sedd'])
+            corr_text = f'r={r:.3f}'
+        except:
+            corr_text = 'r=N/A'
+        
+        ax.set_xlabel('Word Position', fontsize=10)
+        ax.set_ylabel('Normalized Surprisal (z-score)', fontsize=10)
+        ax.set_title(f'Sent #{sent_idx}: {corr_text}', fontsize=11)
+        ax.legend(fontsize=9)
+        ax.grid(True, alpha=0.3)
+        ax.axhline(0, color='gray', linestyle='--', linewidth=0.5)
+    
+    # Hide unused subplots
+    for i in range(len(examples), n_examples):
+        axes[i].axis('off')
+    
+    plt.suptitle('Example Sentence Trajectories (Normalized Within Sentence)', fontsize=14, y=1.00)
+    plt.tight_layout()
+    plt.savefig(f'{output_prefix}_trajectories.png', dpi=150, bbox_inches='tight')
+    print(f"✓ Saved trajectory plots: {output_prefix}_trajectories.png")
     plt.close()
 
 

@@ -1,0 +1,163 @@
+==========================================
+SLURM Job ID: 665629
+Node: badjak
+Start time: Mon Feb  9 06:20:02 PM EST 2026
+==========================================
+
+acrivating conda
+Python: /home/qh246/.conda/envs/sedd/bin/python
+CUDA available: True
+GPU: NVIDIA GeForce RTX 2080 Ti
+
+Working directory: /home/qh246/Score-Entropy-Discrete-Diffusion
+
+Starting SEDD-GPT2 Comparison
+
+======================================================================
+                  SEDD vs GPT-2 SURPRISAL COMPARISON                  
+======================================================================
+
+Input: wikitext2_sentences.csv
+SEDD method: single_pass
+Device: cuda
+
+Processing 200 sentences
+
+======================================================================
+EXTRACTING GPT-2 SURPRISAL
+======================================================================
+
+Loading GPT-2: gpt2
+✓ GPT-2 loaded
+✓ Extracted 6120 word surprisals from GPT-2
+
+======================================================================
+EXTRACTING SEDD SURPRISAL
+======================================================================
+
+Loading SEDD: louaaron/sedd-medium
+Surprisal method: single_pass
+✓ SEDD loaded
+
+  Using sigma=0.0010
+    logits shape: torch.Size([1, 14, 50258])
+    logits range: [-29.750, 6.688]
+
+  Debug info:
+    probs shape: torch.Size([1, 14, 50258])
+    probs sum per position: 1.0000
+    probs max: 0.9648
+    probs min: 0.0000
+    Target token logits/probs (before removing absorb):
+      Pos 1: token=1279
+        At pos-1 (like GPT-2): logit=-14.312, prob=0.000000  ← USED
+        At pos (sees current): logit=5.062, prob=0.957031  ← Overconfident!
+      Pos 2: token=2954
+        At pos-1 (like GPT-2): logit=-13.375, prob=0.000000  ← USED
+        At pos (sees current): logit=3.547, prob=0.738281  ← Overconfident!
+      Pos 3: token=29
+        At pos-1 (like GPT-2): logit=-3.391, prob=0.000717  ← USED
+        At pos (sees current): logit=-3.609, prob=0.000706  ← Overconfident!
+      Pos 4: token=318
+        At pos-1 (like GPT-2): logit=-2.578, prob=0.001984  ← USED
+        At pos (sees current): logit=6.438, prob=0.804688  ← Overconfident!
+      Pos 5: token=281
+        At pos-1 (like GPT-2): logit=-0.262, prob=0.000992  ← USED
+        At pos (sees current): logit=-3.703, prob=0.000935  ← Overconfident!
+    After removing absorb: torch.Size([1, 14, 50257])
+    After renormalization: sum=1.0000
+✓ Extracted 6120 word surprisals from SEDD
+
+======================================================================
+COMPARING MODELS
+======================================================================
+
+======================================================================
+COMPARISON RESULTS
+======================================================================
+
+Summary Statistics:
+  Number of words: 6120
+
+  GPT-2 Surprisal:
+    Mean: 4.846
+    Std:  3.602
+    Range: [0.000, 17.535]
+
+  SEDD Surprisal:
+    Mean: 10.284
+    Std:  3.724
+    Range: [0.502, 23.026]
+
+======================================================================
+CORRELATIONS
+======================================================================
+
+  Pearson correlation:
+    r = 0.4666
+    p = 0.00e+00
+    Interpretation: Moderate
+
+  Spearman correlation (rank-based):
+    ρ = 0.4361
+    p = 1.28e-282
+
+  Within-sentence correlation:
+    Mean within-sentence r = 0.5179
+    Median within-sentence r = 0.5475
+    (Averaged over 195 sentences)
+    → This measures whether models agree on RELATIVE difficulty
+       within each sentence (ignoring absolute magnitude)
+
+  Normalized surprisal correlation:
+    r = 0.4823
+    p = 0.00e+00
+    → This removes magnitude differences, focuses on patterns
+
+✓ Saved merged data: sedd_sp_gpt2_merged.csv
+✓ Saved plots: sedd_sp_gpt2_plots.png
+✓ Saved trajectory plots: sedd_sp_gpt2_trajectories.png
+
+======================================================================
+ANALYSIS BY WORD CHARACTERISTICS
+======================================================================
+
+Correlation by word position:
+  Position 0-5: r=0.699, n=973
+  Position 6-10: r=0.614, n=951
+  Position 11-20: r=0.489, n=1713
+  Position 20+: r=0.317, n=2483
+
+Correlation by surprisal level:
+  Low (0-2): r=-0.282, n=1576
+  Med (2-5): r=0.178, n=1950
+  High (5-10): r=0.263, n=1940
+  VHigh (10+): r=0.191, n=654
+
+Top 10 words where models disagree most:
+word  surprisal_gpt2  surprisal_sedd  abs_diff
+   >        0.041323       20.313727 20.272404
+   >        0.121670       18.498100 18.376430
+   >        0.179377       18.407949 18.228571
+   >        0.167487       18.283800 18.116313
+   >        0.142874       18.187107 18.044233
+  uc        0.098220       17.953876 17.855656
+  Fu        0.050273       17.817611 17.767338
+ unk        0.145004       17.811262 17.666258
+ unk        0.145004       17.811262 17.666258
+ unk        0.111737       17.767911 17.656174
+
+======================================================================
+✓ COMPARISON COMPLETE
+======================================================================
+
+Output files:
+  - sedd_sp_gpt2_merged.csv
+  - sedd_sp_gpt2_plots.png
+
+
+
+==========================================
+✓ Job completed successfully!
+End time: Mon Feb  9 06:21:00 PM EST 2026
+==========================================
