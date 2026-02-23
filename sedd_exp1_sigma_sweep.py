@@ -182,25 +182,64 @@ def plot_sigma_sweep(df, output_dir):
     print(f"  Saved plot: {plot_path}")
     plt.close()
 
-    # Additional plot: condition comparison
-    if 'condition' in df.columns and df['condition'].nunique() > 1:
-        fig, ax = plt.subplots(figsize=(10, 6))
-        for cond, cond_df in df.groupby('condition'):
-            grouped = cond_df.groupby('sigma')['target_surprisal'].mean()
-            ax.plot(grouped.index, grouped.values, 'o-', label=cond,
-                    markersize=4)
-        ax.set_xscale('log')
-        ax.set_xlabel('Sigma (noise level)', fontsize=12)
-        ax.set_ylabel('Mean Target Surprisal', fontsize=12)
-        ax.set_title('Sigma sweep by condition', fontsize=13)
-        ax.invert_xaxis()
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        plt.tight_layout()
-        cond_path = f'{output_dir}/exp1_sigma_by_condition.png'
-        plt.savefig(cond_path, dpi=150, bbox_inches='tight')
-        print(f"  Saved plot: {cond_path}")
-        plt.close()
+    # Paired difference plot: (Ambiguous - Unambiguous) per base condition
+    has_ambig = 'ambiguous' in df.columns and df['ambiguous'].notna().any()
+    has_base = 'base_condition' in df.columns
+    if has_ambig and has_base:
+        amb_means = df[df['ambiguous'] == 1].groupby(
+            ['base_condition', 'item', 'sigma'])['target_surprisal'].mean()
+        unamb_means = df[df['ambiguous'] == 0].groupby(
+            ['base_condition', 'item', 'sigma'])['target_surprisal'].mean()
+        paired = (amb_means - unamb_means).reset_index(name='diff')
+        paired = paired.dropna(subset=['diff'])
+
+        if len(paired) > 0:
+            fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+            colors_bc = {'NPS': '#E91E63', 'NPZ': '#9C27B0', 'MVRR': '#FF9800'}
+
+            # Left: per-condition difference curves
+            ax = axes[0]
+            for bc in sorted(paired['base_condition'].unique()):
+                bc_df = paired[paired['base_condition'] == bc]
+                grouped = bc_df.groupby('sigma')['diff'].agg(['mean', 'sem'])
+                color = colors_bc.get(bc, None)
+                ax.plot(grouped.index, grouped['mean'], 'o-', label=bc,
+                        color=color, markersize=5)
+                ax.fill_between(grouped.index,
+                                grouped['mean'] - grouped['sem'],
+                                grouped['mean'] + grouped['sem'],
+                                alpha=0.15, color=color)
+            ax.axhline(0, color='gray', linestyle='--', linewidth=1)
+            ax.set_xscale('log')
+            ax.set_xlabel('Sigma (noise level)', fontsize=12)
+            ax.set_ylabel('Surprisal difference\n(Ambiguous − Unambiguous)', fontsize=12)
+            ax.set_title('Garden path effect by condition', fontsize=13)
+            ax.invert_xaxis()
+            ax.legend(fontsize=11)
+            ax.grid(True, alpha=0.3)
+
+            # Right: overall difference (averaged across conditions)
+            ax = axes[1]
+            overall = paired.groupby('sigma')['diff'].agg(['mean', 'sem'])
+            ax.plot(overall.index, overall['mean'], 'o-', color='black',
+                    markersize=5, linewidth=2)
+            ax.fill_between(overall.index,
+                            overall['mean'] - overall['sem'],
+                            overall['mean'] + overall['sem'],
+                            alpha=0.2, color='black')
+            ax.axhline(0, color='gray', linestyle='--', linewidth=1)
+            ax.set_xscale('log')
+            ax.set_xlabel('Sigma (noise level)', fontsize=12)
+            ax.set_ylabel('Surprisal difference\n(Ambiguous − Unambiguous)', fontsize=12)
+            ax.set_title('Overall garden path effect', fontsize=13)
+            ax.invert_xaxis()
+            ax.grid(True, alpha=0.3)
+
+            plt.tight_layout()
+            cond_path = f'{output_dir}/exp1_sigma_by_condition.png'
+            plt.savefig(cond_path, dpi=150, bbox_inches='tight')
+            print(f"  Saved plot: {cond_path}")
+            plt.close()
 
     # Key plot: ambiguous vs unambiguous (garden path effect)
     has_ambig = 'ambiguous' in df.columns and df['ambiguous'].notna().any()

@@ -40,10 +40,12 @@ from sampling import get_predictor, Denoiser
 from model import utils as mutils
 
 
-def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
+def run_context_expansion(model, stimuli, num_steps=256, save_every=8,
+                          max_spillover=3):
     """
     For each stimulus, incrementally expand the unmasked context window
-    and measure how it affects denoising of the target token.
+    and measure how it affects denoising of the target token. Also tracks
+    spillover P(target) at positions n+1, n+2, ..., n+max_spillover.
 
     Returns:
         detail_df: One row per (stimulus, context_size, timestep).
@@ -69,19 +71,15 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
         if target_pos < 1 or target_pos >= seq_len:
             continue
 
-        # Sweep context_size from 0 (no context) to target_pos (all prior words)
+        valid_sp_offsets = [off for off in range(1, max_spillover + 1)
+                           if target_pos + off < seq_len]
+
         for ctx_size in range(target_pos + 1):
             trajectory = []
 
             x = model.graph.sample_limit(batch_size, 1024).to(model.device)
 
             def project(x, ctx_sz=ctx_size, tgt_pos=target_pos):
-                """
-                Fix the first ctx_sz tokens to ground truth.
-                Fix target position's token to ground truth is NOT done -
-                target evolves from noise.
-                Everything else stays as noise.
-                """
                 if ctx_sz > 0:
                     x[:, :ctx_sz] = tokens[:, :ctx_sz]
                 x[:, target_pos] = x[:, target_pos]
@@ -120,7 +118,7 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
                         rank = (sorted_idx == target_token_id
                                 ).nonzero(as_tuple=True)[0].item() + 1
 
-                        trajectory.append({
+                        point = {
                             'step': i,
                             'timestep': t[0, 0].item(),
                             'current_token': current_token,
@@ -131,7 +129,14 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
                                 target_prob_at_self) if target_prob_at_self else None,
                             'entropy': entropy,
                             'target_rank': rank,
-                        })
+                        }
+
+                        for off in valid_sp_offsets:
+                            sp_prob = model.get_target_prob(
+                                probs, target_token_id, target_pos + off)
+                            point[f'target_prob_at_n_plus_{off}'] = sp_prob
+
+                        trajectory.append(point)
 
                     x = predictor.update_fn(score_fn, x, t, dt)
 
@@ -153,7 +158,7 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
                 final_prob_prev = model.get_target_prob(
                     probs, target_token_id, target_pos - 1) if target_pos > 0 else None
 
-                trajectory.append({
+                final_point = {
                     'step': num_steps,
                     'timestep': eps,
                     'current_token': final_token,
@@ -164,9 +169,15 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
                         final_prob) if final_prob else None,
                     'entropy': 0.0,
                     'target_rank': 1 if final_correct else None,
-                })
+                }
 
-            # Context words as string
+                for off in valid_sp_offsets:
+                    sp_prob = model.get_target_prob(
+                        probs, target_token_id, target_pos + off)
+                    final_point[f'target_prob_at_n_plus_{off}'] = sp_prob
+
+                trajectory.append(final_point)
+
             context_words = model.tokenizer.decode(
                 tokens[0, :ctx_size].tolist()) if ctx_size > 0 else "<none>"
 
@@ -184,10 +195,9 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
                 'context_fraction': ctx_size / target_pos if target_pos > 0 else 0,
             }
 
-            for point in trajectory:
-                detail_rows.append({**base_info, **point})
+            for pt in trajectory:
+                detail_rows.append({**base_info, **pt})
 
-            # Summary for this context level
             prob_series = [p['target_prob_at_self'] for p in trajectory
                            if p['target_prob_at_self'] is not None]
             surp_series = [p['target_surprisal'] for p in trajectory
@@ -196,7 +206,7 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
             rank_series = [p['target_rank'] for p in trajectory
                            if p['target_rank'] is not None]
 
-            summary_rows.append({
+            summary_entry = {
                 **base_info,
                 'final_token': final_token,
                 'final_correct': final_correct,
@@ -210,7 +220,18 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8):
                     (i for i, c in enumerate(correct_series)
                      if c and all(correct_series[i:])), len(correct_series)
                 ) / len(correct_series) if correct_series else 1.0,
-            })
+            }
+
+            for off in valid_sp_offsets:
+                col = f'target_prob_at_n_plus_{off}'
+                sp_series = [p[col] for p in trajectory
+                             if p.get(col) is not None]
+                summary_entry[f'final_prob_n_plus_{off}'] = (
+                    sp_series[-1] if sp_series else None)
+                summary_entry[f'mean_prob_n_plus_{off}'] = (
+                    np.mean(sp_series) if sp_series else None)
+
+            summary_rows.append(summary_entry)
 
     return pd.DataFrame(detail_rows), pd.DataFrame(summary_rows)
 
@@ -391,6 +412,84 @@ def plot_context_expansion(detail_df, summary_df, output_dir):
         plt.close()
 
 
+def plot_spillover_exp3(summary_df, output_dir, max_spillover=3):
+    """Create separate spillover visualizations for exp3."""
+    sp_cols = [f'final_prob_n_plus_{off}' for off in range(1, max_spillover + 1)
+               if f'final_prob_n_plus_{off}' in summary_df.columns]
+    if not sp_cols:
+        print("  No spillover data to plot.")
+        return
+
+    has_ambig = ('ambiguous' in summary_df.columns and
+                 summary_df['ambiguous'].notna().any())
+    amb_labels = {0: 'Unambiguous', 1: 'Ambiguous'}
+    colors = {0: '#2196F3', 1: '#F44336'}
+
+    # --- Figure 1: Spillover vs context size ---
+    fig, axes = plt.subplots(1, len(sp_cols), figsize=(5 * len(sp_cols), 5),
+                             squeeze=False)
+    axes = axes[0]
+
+    for ax, col in zip(axes, sp_cols):
+        offset = int(col.split('_')[-1])
+        sub = summary_df.dropna(subset=[col])
+        if len(sub) == 0:
+            ax.set_title(f'n+{offset}\n(no data)')
+            continue
+
+        grouped = sub.groupby('context_size')[col].agg(['mean', 'sem'])
+        ax.errorbar(grouped.index, grouped['mean'], yerr=grouped['sem'],
+                    fmt='o-', capsize=3, markersize=4, color='#4CAF50')
+        ax.set_xlabel('Context words revealed', fontsize=11)
+        ax.set_ylabel(f'P(target) at n+{offset}', fontsize=11)
+        ax.set_title(f'Spillover at n+{offset}', fontsize=12)
+        ax.grid(True, alpha=0.3)
+
+    plt.suptitle('Spillover P(target) vs context amount', fontsize=14, y=1.02)
+    plt.tight_layout()
+    path = f'{output_dir}/exp3_spillover.png'
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    print(f"  Saved plot: {path}")
+    plt.close()
+
+    # --- Figure 2: Spillover ambiguity comparison ---
+    if has_ambig:
+        fig, axes = plt.subplots(1, len(sp_cols),
+                                 figsize=(5 * len(sp_cols), 5),
+                                 squeeze=False)
+        axes = axes[0]
+
+        for ax, col in zip(axes, sp_cols):
+            offset = int(col.split('_')[-1])
+            sub = summary_df.dropna(subset=[col])
+            if len(sub) == 0:
+                ax.set_title(f'n+{offset}\n(no data)')
+                continue
+
+            for amb_val in sorted(sub['ambiguous'].dropna().unique()):
+                amb_sub = sub[sub['ambiguous'] == amb_val]
+                grouped = amb_sub.groupby('context_fraction')[col].agg(
+                    ['mean', 'sem'])
+                label = amb_labels.get(int(amb_val), str(amb_val))
+                ax.errorbar(grouped.index, grouped['mean'],
+                            yerr=grouped['sem'], fmt='o-',
+                            label=label, color=colors.get(int(amb_val)),
+                            capsize=3, markersize=4)
+            ax.set_xlabel('Context fraction', fontsize=11)
+            ax.set_ylabel(f'P(target) at n+{offset}', fontsize=11)
+            ax.set_title(f'Spillover at n+{offset}', fontsize=12)
+            ax.legend(fontsize=9)
+            ax.grid(True, alpha=0.3)
+
+        plt.suptitle('Spillover: Ambiguous vs Unambiguous', fontsize=14,
+                      y=1.02)
+        plt.tight_layout()
+        path = f'{output_dir}/exp3_spillover_ambiguity.png'
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        print(f"  Saved plot: {path}")
+        plt.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Exp 3: Context window expansion')
@@ -467,6 +566,7 @@ def main():
 
     print("\nCreating plots...")
     plot_context_expansion(detail_df, summary_df, output_dir)
+    plot_spillover_exp3(summary_df, output_dir)
 
     print("\nDone.")
     return 0

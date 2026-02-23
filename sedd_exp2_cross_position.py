@@ -32,17 +32,23 @@ from sampling import get_predictor, Denoiser
 from model import utils as mutils
 
 
-def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4):
+def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4,
+                                max_spillover=3):
     """
     For each stimulus, run diffusion and track P(target_token) at every
-    prior position across the denoising trajectory.
+    prior position across the denoising trajectory. Also tracks spillover
+    at positions n+1, n+2, ..., n+max_spillover after the target.
 
     Returns:
-        detail_df: One row per (stimulus, position, timestep) combination.
-        summary_df: One row per (stimulus, position), aggregated over timesteps.
+        detail_df: One row per (stimulus, context position, timestep).
+        summary_df: One row per (stimulus, context position), aggregated.
+        spillover_detail_df: One row per (stimulus, spillover offset, timestep).
+        spillover_summary_df: One row per (stimulus, spillover offset), aggregated.
     """
     detail_rows = []
     summary_rows = []
+    spillover_detail_rows = []
+    spillover_summary_rows = []
 
     predictor = get_predictor('analytic')(model.graph, model.noise)
     denoiser = Denoiser(model.graph, model.noise)
@@ -62,6 +68,10 @@ def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4):
             continue
 
         tracking = {p: [] for p in range(target_pos)}
+
+        valid_sp_offsets = [off for off in range(1, max_spillover + 1)
+                           if target_pos + off < seq_len]
+        sp_tracking = {off: [] for off in valid_sp_offsets}
 
         x = model.graph.sample_limit(batch_size, 1024).to(model.device)
 
@@ -101,6 +111,19 @@ def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4):
                             'position_token_correct': current_token == ground_truth,
                         })
 
+                    for offset in valid_sp_offsets:
+                        sp_pos = target_pos + offset
+                        sp_prob = model.get_target_prob(
+                            probs, target_token_id, sp_pos)
+                        if sp_prob is None:
+                            continue
+                        sp_tracking[offset].append({
+                            'step': i,
+                            'timestep': t_val,
+                            'target_prob': sp_prob,
+                            'target_surprisal': compute_surprisal(sp_prob),
+                        })
+
                 x = predictor.update_fn(score_fn, x, t, dt)
 
             # Final step
@@ -123,6 +146,19 @@ def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4):
                     'target_prob': target_prob,
                     'target_surprisal': compute_surprisal(target_prob),
                     'position_token_correct': True,
+                })
+
+            for offset in valid_sp_offsets:
+                sp_pos = target_pos + offset
+                sp_prob = model.get_target_prob(
+                    probs, target_token_id, sp_pos)
+                if sp_prob is None:
+                    continue
+                sp_tracking[offset].append({
+                    'step': num_steps,
+                    'timestep': eps,
+                    'target_prob': sp_prob,
+                    'target_surprisal': compute_surprisal(sp_prob),
                 })
 
         base_info = {
@@ -169,21 +205,186 @@ def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4):
                     'surprisal_decrease': surp_series[0] - surp_series[-1],
                 })
 
-    return pd.DataFrame(detail_rows), pd.DataFrame(summary_rows)
+        for offset in valid_sp_offsets:
+            sp_pos = target_pos + offset
+            word_at_sp = model.tokenizer.decode([tokens[0, sp_pos].item()])
+
+            for point in sp_tracking[offset]:
+                spillover_detail_rows.append({
+                    **base_info,
+                    'spillover_offset': offset,
+                    'spillover_position': sp_pos,
+                    'spillover_word': word_at_sp,
+                    **point,
+                })
+
+            if sp_tracking[offset]:
+                prob_series = [pt['target_prob'] for pt in sp_tracking[offset]]
+                surp_series = [pt['target_surprisal']
+                               for pt in sp_tracking[offset]]
+
+                spillover_summary_rows.append({
+                    **base_info,
+                    'spillover_offset': offset,
+                    'spillover_position': sp_pos,
+                    'spillover_word': word_at_sp,
+                    'target_prob_initial': prob_series[0],
+                    'target_prob_final': prob_series[-1],
+                    'target_prob_max': max(prob_series),
+                    'target_prob_mean': np.mean(prob_series),
+                    'target_surprisal_initial': surp_series[0],
+                    'target_surprisal_final': surp_series[-1],
+                    'target_surprisal_min': min(surp_series),
+                    'prob_increase': prob_series[-1] - prob_series[0],
+                    'surprisal_decrease': surp_series[0] - surp_series[-1],
+                })
+
+    return (pd.DataFrame(detail_rows), pd.DataFrame(summary_rows),
+            pd.DataFrame(spillover_detail_rows),
+            pd.DataFrame(spillover_summary_rows))
+
+
+def _build_relative_heatmap(subset_df, max_distance=5):
+    """
+    Build an averaged heatmap of P(target) using relative positions.
+
+    Rows: relative position (n-1, n-2, ..., n-5) where n = target position.
+    Columns: timestep values (noise → clean).
+
+    For sentences where target_pos < max_distance, missing positions are
+    filled with 0. Returns the heatmap matrix, the count of non-zero
+    contributions per cell, and the sorted timestep values.
+    """
+    capped = subset_df[subset_df['distance_to_target'] <= max_distance].copy()
+    if len(capped) == 0:
+        return None, None, None
+
+    timesteps_sorted = sorted(capped['timestep'].unique(), reverse=True)
+
+    # Identify all sentence keys (item × condition × ambiguous)
+    sent_keys = capped.groupby(
+        ['item', 'condition', 'ambiguous']).ngroups
+    all_sentences = capped.groupby(
+        ['item', 'condition', 'ambiguous']).first().index
+
+    distances = list(range(1, max_distance + 1))
+
+    heatmap = np.zeros((max_distance, len(timesteps_sorted)))
+    counts = np.zeros((max_distance, len(timesteps_sorted)), dtype=int)
+
+    ts_to_col = {t: i for i, t in enumerate(timesteps_sorted)}
+
+    for _, row in capped.iterrows():
+        dist = int(row['distance_to_target'])
+        ts = row['timestep']
+        if dist < 1 or dist > max_distance:
+            continue
+        r = dist - 1
+        c = ts_to_col.get(ts)
+        if c is None:
+            continue
+        heatmap[r, c] += row['target_prob']
+        counts[r, c] += 1
+
+    # Average (avoid divide by zero)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        avg_heatmap = np.where(counts > 0, heatmap / counts, 0.0)
+
+    return avg_heatmap, counts, timesteps_sorted
+
+
+def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
+    """
+    Create three averaged heatmaps:
+    1. All sentences
+    2. Ambiguous sentences only
+    3. Unambiguous sentences only
+
+    Y-axis: relative position (n-1 to n-5).
+    X-axis: timestep (noise → clean).
+    Cell color: mean P(target token).
+    """
+    has_ambig = ('ambiguous' in detail_df.columns and
+                 detail_df['ambiguous'].notna().any())
+
+    slices = [('All sentences', detail_df)]
+    if has_ambig:
+        slices.append(('Ambiguous', detail_df[detail_df['ambiguous'] == 1]))
+        slices.append(('Unambiguous', detail_df[detail_df['ambiguous'] == 0]))
+
+    n_panels = len(slices)
+    fig, axes = plt.subplots(1, n_panels, figsize=(6 * n_panels, 5))
+    if n_panels == 1:
+        axes = [axes]
+
+    vmin_global, vmax_global = None, None
+    heatmaps_data = []
+
+    for label, sub_df in slices:
+        hm, ct, ts = _build_relative_heatmap(sub_df, max_distance)
+        heatmaps_data.append((label, hm, ct, ts))
+        if hm is not None:
+            if vmin_global is None:
+                vmin_global = hm.min()
+                vmax_global = hm.max()
+            else:
+                vmin_global = min(vmin_global, hm.min())
+                vmax_global = max(vmax_global, hm.max())
+
+    y_labels = [f'n−{d}' for d in range(1, max_distance + 1)]
+
+    for ax, (label, hm, ct, ts) in zip(axes, heatmaps_data):
+        if hm is None:
+            ax.set_title(f'{label}\n(no data)')
+            continue
+
+        im = ax.imshow(hm, aspect='auto', cmap='YlOrRd',
+                        interpolation='nearest',
+                        vmin=vmin_global, vmax=vmax_global)
+
+        ax.set_yticks(range(max_distance))
+        ax.set_yticklabels(y_labels, fontsize=10)
+
+        # Show ~8 evenly spaced timestep ticks
+        n_ts = len(ts)
+        tick_step = max(1, n_ts // 8)
+        x_tick_idx = list(range(0, n_ts, tick_step))
+        ax.set_xticks(x_tick_idx)
+        ax.set_xticklabels([f'{ts[i]:.2f}' for i in x_tick_idx],
+                            fontsize=7, rotation=45)
+        ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
+        ax.set_ylabel('Relative context position', fontsize=10)
+
+        # Annotate with sentence counts
+        total_sents = ct.max() if ct.max() > 0 else 0
+        min_sents = ct[ct > 0].min() if (ct > 0).any() else 0
+        ax.set_title(f'{label}\n(N={total_sents}, min contrib={min_sents})',
+                      fontsize=11)
+
+        plt.colorbar(im, ax=ax, shrink=0.8, label='Mean P(target)')
+
+    plt.tight_layout()
+    hm_path = f'{output_dir}/exp2_heatmaps.png'
+    plt.savefig(hm_path, dpi=150, bbox_inches='tight')
+    print(f"  Saved plot: {hm_path}")
+    plt.close()
+
+    # Print count table for transparency
+    for label, hm, ct, ts in heatmaps_data:
+        if ct is None:
+            continue
+        print(f"\n  Sentence contributions per cell ({label}):")
+        for d in range(max_distance):
+            unique_counts = np.unique(ct[d])
+            print(f"    n−{d+1}: {unique_counts}")
 
 
 def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
     """Create visualizations of cross-position tracking."""
 
-    # 1. Heatmap: averaged P(target) across positions and timesteps
     if len(detail_df) == 0:
         print("  No data to plot.")
         return
-
-    # Aggregate across all items
-    pivot = detail_df.groupby(
-        ['distance_to_target', 'timestep']
-    )['target_prob'].mean().reset_index()
 
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
@@ -227,61 +428,8 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
     print(f"  Saved plot: {plot_path}")
     plt.close()
 
-    # 2. Heatmap for a few example items
-    unique_items = detail_df['item'].unique()[:4]
-    if len(unique_items) > 0:
-        fig, axes = plt.subplots(
-            1, len(unique_items),
-            figsize=(5 * len(unique_items), 5))
-        if len(unique_items) == 1:
-            axes = [axes]
-
-        for ax, item in zip(axes, unique_items):
-            item_data = detail_df[detail_df['item'] == item]
-            cond = item_data['condition'].iloc[0]
-
-            item_pivot = item_data.pivot_table(
-                index='context_position',
-                columns='timestep',
-                values='target_prob',
-                aggfunc='mean')
-
-            if item_pivot.empty:
-                continue
-
-            item_pivot = item_pivot.sort_index(ascending=True)
-            item_pivot = item_pivot[sorted(
-                item_pivot.columns, reverse=True)]
-
-            im = ax.imshow(
-                item_pivot.values,
-                aspect='auto',
-                cmap='YlOrRd',
-                interpolation='nearest')
-
-            y_labels = []
-            for pos in item_pivot.index:
-                word_rows = item_data[item_data['context_position'] == pos]
-                if len(word_rows) > 0:
-                    w = word_rows.iloc[0]['context_word'].strip()[:8]
-                    y_labels.append(f'{pos}:{w}')
-                else:
-                    y_labels.append(str(pos))
-
-            ax.set_yticks(range(len(y_labels)))
-            ax.set_yticklabels(y_labels, fontsize=8)
-            ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
-            ax.set_ylabel('Context position', fontsize=10)
-            ax.set_title(f'Item {item} ({cond})\n'
-                         f'Target: "{item_data.iloc[0]["target_word"]}"',
-                         fontsize=10)
-            plt.colorbar(im, ax=ax, shrink=0.8)
-
-        plt.tight_layout()
-        heatmap_path = f'{output_dir}/exp2_heatmaps.png'
-        plt.savefig(heatmap_path, dpi=150, bbox_inches='tight')
-        print(f"  Saved plot: {heatmap_path}")
-        plt.close()
+    # 2. Averaged heatmaps with relative positions (n-1 through n-5)
+    _plot_averaged_heatmaps(detail_df, output_dir)
 
     # 3. Condition comparison
     if 'condition' in summary_df.columns and summary_df['condition'].nunique() > 1:
@@ -359,6 +507,97 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
         plt.close()
 
 
+def plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir):
+    """Create separate spillover visualizations for exp2."""
+    if len(sp_summary_df) == 0:
+        print("  No spillover data to plot.")
+        return
+
+    has_ambig = ('ambiguous' in sp_summary_df.columns and
+                 sp_summary_df['ambiguous'].notna().any())
+    amb_labels = {0: 'Unambiguous', 1: 'Ambiguous'}
+    colors = {0: '#2196F3', 1: '#F44336'}
+
+    # --- Figure 1: Spillover overview ---
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    # Left: P(target) trajectory at each spillover offset across timesteps
+    ax = axes[0]
+    for offset in sorted(sp_detail_df['spillover_offset'].unique()):
+        sub = sp_detail_df[sp_detail_df['spillover_offset'] == offset]
+        grouped = sub.groupby('timestep')['target_prob'].agg(['mean', 'sem'])
+        grouped = grouped.sort_index(ascending=False)
+        ax.plot(grouped.index, grouped['mean'], 'o-',
+                label=f'n+{offset}', markersize=3)
+        ax.fill_between(grouped.index,
+                        grouped['mean'] - grouped['sem'],
+                        grouped['mean'] + grouped['sem'], alpha=0.15)
+    ax.set_xlabel('Timestep (noise → clean)', fontsize=12)
+    ax.set_ylabel('P(target token)', fontsize=12)
+    ax.set_title('Spillover: P(target) at post-target positions', fontsize=13)
+    ax.legend(fontsize=11)
+    ax.grid(True, alpha=0.3)
+
+    # Right: Final P(target) bar chart by spillover offset
+    ax = axes[1]
+    final_by_offset = sp_summary_df.groupby('spillover_offset').agg({
+        'target_prob_final': ['mean', 'sem'],
+    }).reset_index()
+    final_by_offset.columns = ['offset', 'prob_mean', 'prob_sem']
+    x_labels = [f'n+{int(o)}' for o in final_by_offset['offset']]
+    ax.bar(x_labels, final_by_offset['prob_mean'],
+           yerr=final_by_offset['prob_sem'], capsize=5, alpha=0.7,
+           color='#4CAF50')
+    ax.set_xlabel('Post-target position', fontsize=12)
+    ax.set_ylabel('P(target) at final timestep', fontsize=12)
+    ax.set_title('Spillover strength by distance', fontsize=13)
+    ax.grid(True, alpha=0.3, axis='y')
+
+    plt.tight_layout()
+    path = f'{output_dir}/exp2_spillover.png'
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    print(f"  Saved plot: {path}")
+    plt.close()
+
+    # --- Figure 2: Spillover ambiguity comparison ---
+    if has_ambig:
+        offsets = sorted(sp_summary_df['spillover_offset'].unique())
+        n_off = len(offsets)
+        fig, axes = plt.subplots(1, n_off, figsize=(5 * n_off, 5),
+                                 squeeze=False)
+        axes = axes[0]
+
+        for ax, offset in zip(axes, offsets):
+            sub_detail = sp_detail_df[
+                sp_detail_df['spillover_offset'] == offset]
+            for amb_val in sorted(
+                    sub_detail['ambiguous'].dropna().unique()):
+                amb_sub = sub_detail[sub_detail['ambiguous'] == amb_val]
+                grouped = amb_sub.groupby('timestep')['target_prob'].agg(
+                    ['mean', 'sem'])
+                grouped = grouped.sort_index(ascending=False)
+                label = amb_labels.get(int(amb_val), str(amb_val))
+                ax.plot(grouped.index, grouped['mean'], 'o-',
+                        label=label, color=colors.get(int(amb_val)),
+                        markersize=3)
+                ax.fill_between(grouped.index,
+                                grouped['mean'] - grouped['sem'],
+                                grouped['mean'] + grouped['sem'],
+                                alpha=0.15, color=colors.get(int(amb_val)))
+            ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
+            ax.set_ylabel('P(target token)', fontsize=10)
+            ax.set_title(f'Position n+{offset}', fontsize=12)
+            ax.legend(fontsize=9)
+            ax.grid(True, alpha=0.3)
+
+        plt.suptitle('Spillover: Ambiguous vs Unambiguous', fontsize=14, y=1.02)
+        plt.tight_layout()
+        path = f'{output_dir}/exp2_spillover_ambiguity.png'
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        print(f"  Saved plot: {path}")
+        plt.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Exp 2: Cross-position probability tracking')
@@ -398,13 +637,14 @@ def main():
     print(f"\n  Example:")
     print(f"    Sentence: {ex['sentence']}")
     print(f"    Target: '{ex['target_word']}' at token pos {ex['target_token_pos']}")
-    print(f"    Tracking {ex['target_token_pos']} prior positions")
+    print(f"    Tracking {ex['target_token_pos']} prior positions + spillover")
 
     print("\nRunning cross-position tracking...")
-    detail_df, summary_df = run_cross_position_tracking(
-        model, stimuli,
-        num_steps=args.num_steps,
-        save_every=args.save_every)
+    detail_df, summary_df, sp_detail_df, sp_summary_df = \
+        run_cross_position_tracking(
+            model, stimuli,
+            num_steps=args.num_steps,
+            save_every=args.save_every)
 
     detail_path = f'{output_dir}/exp2_cross_position_detail_{loader.name}.csv'
     summary_path = f'{output_dir}/exp2_cross_position_summary_{loader.name}.csv'
@@ -412,6 +652,13 @@ def main():
     summary_df.to_csv(summary_path, index=False)
     print(f"\n  Saved detail: {detail_path} ({len(detail_df)} rows)")
     print(f"  Saved summary: {summary_path} ({len(summary_df)} rows)")
+
+    sp_detail_path = f'{output_dir}/exp2_spillover_detail_{loader.name}.csv'
+    sp_summary_path = f'{output_dir}/exp2_spillover_summary_{loader.name}.csv'
+    sp_detail_df.to_csv(sp_detail_path, index=False)
+    sp_summary_df.to_csv(sp_summary_path, index=False)
+    print(f"  Saved spillover detail: {sp_detail_path} ({len(sp_detail_df)} rows)")
+    print(f"  Saved spillover summary: {sp_summary_path} ({len(sp_summary_df)} rows)")
 
     # Summary stats
     print("\n" + "=" * 60)
@@ -425,8 +672,17 @@ def main():
         }).round(4)
         print(dist_summary.to_string())
 
+    if len(sp_summary_df) > 0:
+        print("\n  Spillover summary:")
+        sp_dist = sp_summary_df.groupby('spillover_offset').agg({
+            'target_prob_final': ['mean', 'std'],
+            'prob_increase': 'mean',
+        }).round(6)
+        print(sp_dist.to_string())
+
     print("\nCreating plots...")
     plot_cross_position(detail_df, summary_df, stimuli, model, output_dir)
+    plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir)
 
     print("\nDone.")
     return 0
