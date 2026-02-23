@@ -53,6 +53,7 @@ class SEDDModelWrapper:
         which is correct for diffusion training but wrong for probability
         evaluation on clean text.
         """
+        sigma = sigma.reshape(-1)
         indices = tokens
         x = self.model.vocab_embed(indices)
         c = F.silu(self.model.sigma_map(sigma))
