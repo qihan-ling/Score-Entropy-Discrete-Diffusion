@@ -1,0 +1,649 @@
+sentence_idx,Sentence,word,word_pos,sum_surprisal,mean_surprisal,item,logfreq,length
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",are,1,6.35415644056463,6.35415644056463,73,13.23333392735152,3
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",now,2,8.464780909681153,8.464780909681153,73,11.845282101257755,3
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",rumblings,3,36.697708739240795,12.232569579746931,73,4.653960350157523,9
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",that,4,7.2455406332244285,7.2455406332244285,73,14.11010071456357,4
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",Apple,5,9.309066719598365,9.309066719598365,73,9.350189267092581,5
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",might,6,9.171595728969764,9.171595728969764,73,11.056335469345912,5
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",soon,7,13.255388360974363,13.255388360974363,73,10.049447637979663,4
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",invade,8,12.68428861485726,12.68428861485726,73,6.385194398997726,6
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",the,9,8.769193410392145,8.769193410392145,73,15.687451186819413,3
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",smart,10,10.760601602586656,10.760601602586656,73,9.085117227222105,5
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",watch,11,8.928469678068215,8.928469678068215,73,9.784760321267326,5
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.","space,",12,12.447595448660236,6.223797724330118,73,10.294617061876925,6
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",though,13,7.731717121715765,7.731717121715765,73,10.864789890239631,6
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",the,14,7.513804619819108,7.513804619819108,73,15.687451186819413,3
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",company,15,10.777599178955228,10.777599178955228,73,11.004164375253117,7
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",is,16,7.479436976314901,7.479436976314901,73,13.90494258614572,2
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",maintaining,17,15.241455831876742,15.241455831876742,73,7.898782356970309,11
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",its,18,8.010741131424432,8.010741131424432,73,12.244408351795746,3
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",customary,19,14.802950869690378,14.802950869690378,73,6.186208623900494,9
+0,"There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",silence.,20,16.349881741993173,8.174940870996586,73,8.261268150577648,8
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",bill,1,14.302175581777888,14.302175581777888,74,9.96189796008255,4
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",was,2,8.610670183152276,8.610670183152276,74,13.430125979710267,3
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",drafted,3,11.701058400307996,11.701058400307996,74,6.9167150203536085,7
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",and,4,4.3474742531672215,4.3474742531672215,74,14.964528530543614,3
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",introduced,5,10.945172879114628,10.945172879114628,74,8.840001065843392,10
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",into,6,4.628886712605407,4.628886712605407,74,12.285669099801316,4
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",Parliament,7,12.641929341018118,12.641929341018118,74,7.513163545234075,10
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",several,8,9.6808934685577,9.6808934685577,74,10.579869986763343,7
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",times,9,8.228154008029657,8.228154008029657,74,10.813216804908437,5
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",but,10,6.67755659561849,6.67755659561849,74,13.16719141700017,3
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",met,11,11.737692533487776,11.737692533487776,74,9.570877846729212,3
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",with,12,2.087284719140862,2.087284719140862,74,13.689502791749778,4
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",great,13,12.222734040098052,12.222734040098052,74,11.01327054920641,5
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.","opposition,",14,16.9834220410902,8.4917110205451,74,8.304494897963567,11
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",mostly,15,11.791345246980097,11.791345246980097,74,9.251482315307358,6
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",from,16,8.626501648368958,8.626501648368958,74,13.161822523668638,4
+1,"A bill was drafted and introduced into Parliament several times but met with great opposition, mostly from farmers.",farmers.,17,17.28520479107563,8.642602395537814,74,8.664578178329295,8
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",human,1,9.309066719598365,9.309066719598365,75,10.463988662743825,5
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",body,2,8.564626244650869,8.564626244650869,75,10.570444750005832,4
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",can,3,7.389052914846632,7.389052914846632,75,12.661279845533151,3
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",tolerate,4,11.431525646361893,11.431525646361893,75,7.080026499922591,8
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",only,5,6.230542484597453,6.230542484597453,75,11.953828499481324,4
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",a,6,5.966390909555866,5.966390909555866,75,14.90068259642208,1
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",small,7,8.29459910743781,8.29459910743781,75,10.976662367940685,5
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",range,8,6.31967026449346,6.31967026449346,75,9.792667717430884,5
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",of,9,5.413601086690843,5.413601086690843,75,14.959542893887448,2
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.","temperature,",10,16.020887909190954,8.010443954595477,75,9.083075020930307,12
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",especially,11,11.57928652809038,11.57928652809038,75,10.178806009504447,10
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",when,12,6.971317714146653,6.971317714146653,75,12.614739289914159,4
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",the,13,7.486216663300279,7.486216663300279,75,15.687451186819413,3
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",person,14,9.991742600291015,9.991742600291015,75,10.256219733992088,6
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",is,15,6.141594998580957,6.141594998580957,75,13.90494258614572,2
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",engaged,16,11.037110374440312,11.037110374440312,75,8.185628891147607,7
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",in,17,5.719716860831462,5.719716860831462,75,14.60582619067051,2
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",vigorous,18,13.436859215888006,13.436859215888006,75,7.164720378771857,8
+2,"The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",activity.,19,11.1644112173142,5.5822056086571,75,9.25023393563786,9
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",Peter,1,8.132843828225331,8.132843828225331,76,9.039670667922676,5
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",slowly,2,15.31795186486685,15.31795186486685,76,9.117457244496126,6
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",advancing,3,9.014827246600426,9.014827246600426,76,6.8885724595653635,9
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",upon,4,6.16310120380192,6.16310120380192,76,9.564301637217232,4
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",him,5,13.226036148961835,13.226036148961835,76,11.779120842880276,3
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",through,6,8.228154008029657,8.228154008029657,76,11.60074401610714,7
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",the,7,4.253022074273534,4.253022074273534,76,15.687451186819413,3
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",air,8,8.473871881382406,8.473871881382406,76,10.367976001093753,3
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",with,9,6.394430339702569,6.394430339702569,76,13.689502791749778,4
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",dagger,10,15.045022430890103,15.045022430890103,76,5.53338948872752,6
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.","poised,",11,17.74877752999107,8.874388764995535,76,7.186144304522325,7
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",he,12,9.10935342009254,9.10935342009254,76,13.340922034134344,2
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",sprang,13,19.36231151964717,19.36231151964717,76,6.255750041753367,6
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",upon,14,8.64800785358992,8.64800785358992,76,9.564301637217232,4
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",the,15,5.601417162802439,5.601417162802439,76,15.687451186819413,3
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",bulwarks,16,38.793062355911665,12.931020785303888,76,2.995732273553991,8
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",to,17,11.47647703422416,11.47647703422416,76,14.928149018365476,2
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",cast,18,8.337490672067123,8.337490672067123,76,8.941283763647567,4
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",himself,19,8.317766166719343,8.317766166719343,76,10.134757991061946,7
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",into,20,5.705859826170036,5.705859826170036,76,12.285669099801316,4
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",the,21,6.002758553726741,6.002758553726741,76,15.687451186819413,3
+3,"Seeing Peter slowly advancing upon him through the air with dagger poised, he sprang upon the bulwarks to cast himself into the sea.",sea.,22,15.679420107377862,7.839710053688931,76,9.586445324777861,4
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",months,1,11.167472192303556,11.167472192303556,77,10.438078529852381,6
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.","later,",2,12.54722811282096,6.27361405641048,77,10.777016910508976,6
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",Michael,3,10.212285369905167,10.212285369905167,77,9.644522504181841,7
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",Larson,4,16.993323972077494,16.993323972077494,77,6.180016653652572,6
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",saw,5,15.152508345860246,15.152508345860246,77,10.096048177372545,3
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",another,6,5.719716860831462,5.719716860831462,77,11.231159192947752,7
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",opportunity,7,8.794039408978675,8.794039408978675,77,9.366146823114383,11
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",to,8,5.669819889686839,5.669819889686839,77,14.928149018365476,2
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",stack,9,9.33034411804565,9.33034411804565,77,7.570443252057374,5
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",the,10,4.999045006881427,4.999045006881427,77,15.687451186819413,3
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",odds,11,9.996964544272169,9.996964544272169,77,8.177515823846075,4
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",in,12,6.282243858974344,6.282243858974344,77,14.60582619067051,2
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",his,13,11.894957510444392,11.894957510444392,77,13.034853694462726,3
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",favor,14,7.3767828222548175,7.3767828222548175,77,8.682368589375221,5
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",with,15,5.360255105985551,5.360255105985551,77,13.689502791749778,4
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",a,16,6.541755054459428,6.541755054459428,77,14.90068259642208,1
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",dash,17,9.565658204980116,9.565658204980116,77,7.321188556739478,4
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",of,18,10.905432550465113,10.905432550465113,77,14.959542893887448,2
+4,"Some months later, Michael Larson saw another opportunity to stack the odds in his favor with a dash of ingenuity.",ingenuity.,19,23.78263811612286,11.89131905806143,77,6.263398262591624,10
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.","Murphy,",1,22.03497365641927,11.017486828209636,78,7.68017564043659,7
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",the,2,5.705859826170036,5.705859826170036,78,15.687451186819413,3
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",Senior,3,11.260253925754522,11.260253925754522,78,9.312896960301275,6
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",PGA,4,29.414001207806475,14.707000603903237,78,7.344719054149673,3
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",Tour,5,8.806697805850598,8.806697805850598,78,9.404590499635411,4
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",money,6,11.638320059674571,11.638320059674571,78,10.746002564746897,5
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",leader,7,12.592481065604137,12.592481065604137,78,9.233373071086755,6
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",with,8,5.455565285789875,5.455565285789875,78,13.689502791749778,4
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",seven,9,9.815515968764558,9.815515968764558,78,9.642901705746048,5
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",hundred,10,8.492305583071243,8.492305583071243,78,8.96482339168508,7
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.","thousand,",11,9.32669654466621,4.663348272333105,78,8.639764743804419,9
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",says,12,8.637196937485704,8.637196937485704,78,12.36796612947765,4
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",heat,13,15.218466313652042,15.218466313652042,78,10.207584166256003,4
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",should,14,10.358888844097043,10.358888844097043,78,11.343796501962258,6
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",n't,15,18.040555679664855,9.020277839832428,78,12.883321616624814,3
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",be,16,9.869340618778338,9.869340618778338,78,13.144588558142994,2
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",a,17,5.838081460912495,5.838081460912495,78,14.90068259642208,1
+5,"Bob Murphy, the Senior PGA Tour money leader with seven hundred thousand, says heat should n't be a factor.",factor.,18,12.475551220321893,6.237775610160947,78,8.754476306284166,7
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.","Anderson,",1,17.964625896091697,8.982312948045848,79,8.125630988477065,9
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",considered,2,13.246913733983392,13.246913733983392,79,9.315960853839867,10
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",a,3,8.159161136542705,8.159161136542705,79,14.90068259642208,1
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",key,4,6.841859646909766,6.841859646909766,79,9.874676470682008,3
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",witness,5,10.131244159902042,10.131244159902042,79,8.085486772102845,7
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",by,6,6.813688769943069,6.813688769943069,79,13.154086825400123,2
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",the,7,7.762624659178842,7.762624659178842,79,15.687451186819413,3
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.","prosecution,",8,16.2255607930041,8.11278039650205,79,6.933423025730715,12
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",vowed,9,17.65350113339987,17.65350113339987,79,6.78105762593618,5
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",he,10,8.653457458357485,8.653457458357485,79,13.340922034134344,2
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",would,11,4.61646419260685,4.61646419260685,79,12.305506130995642,5
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",n't,12,10.738378465801947,10.738378465801947,79,12.883321616624814,3
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",testify,13,21.373285047703106,10.686642523851553,79,6.731018100482083,7
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",when,14,8.159161136542705,8.159161136542705,79,12.614739289914159,4
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",served,15,11.645099746659952,11.645099746659952,79,9.13043098874788,6
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",a,16,6.389874523166709,6.389874523166709,79,14.90068259642208,1
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",subpoena,17,11.378036961410906,11.378036961410906,79,5.4510384535657,8
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",last,18,10.389425567957124,10.389425567957124,79,11.3710046940006,4
+6,"Greg Anderson, considered a key witness by the prosecution, vowed he would n't testify when served a subpoena last week.",week.,19,12.070208055997796,6.035104027998898,79,10.4521868287302,5
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,are,1,9.96097094162426,9.96097094162426,80,13.23333392735152,3
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,more,2,8.23532249750827,8.23532249750827,80,12.720726930609645,4
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,flexible,3,11.554127968454225,11.554127968454225,80,7.945555428253489,8
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,than,4,6.120541589383125,6.120541589383125,80,12.342075356929337,4
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,humans,5,10.535213381418624,10.535213381418624,80,8.962263554116761,6
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,because,6,1.6331544390514163,1.6331544390514163,80,11.768133414760477,7
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,a,7,15.521415858234612,15.521415858234612,80,14.90068259642208,1
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,bird,8,6.278170533586708,6.278170533586708,80,8.791486026749002,4
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,'s,9,14.82618751147084,7.41309375573542,80,13.98982010414805,2
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,head,10,8.721280054696246,8.721280054696246,80,10.495847079283381,4
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,is,11,12.253505698764808,12.253505698764808,80,13.90494258614572,2
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,only,12,7.340850813028754,7.340850813028754,80,11.953828499481324,4
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,connected,13,5.848607873899483,5.848607873899483,80,8.46674164792014,9
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,by,14,8.06385095673838,8.06385095673838,80,13.154086825400123,2
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,one,15,10.453447426722056,10.453447426722056,80,12.73209914830059,3
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,socket,16,5.545177444479562,5.545177444479562,80,6.049733455231958,6
+7,Owls are more flexible than humans because a bird 's head is only connected by one socket pivot.,pivot.,17,15.084402392391523,7.542201196195761,80,6.525029657843462,6
+8,"Even in the same animal, not all bites are the same.",in,1,7.065003198223976,7.065003198223976,81,14.60582619067051,2
+8,"Even in the same animal, not all bites are the same.",the,2,5.420473965978605,5.420473965978605,81,15.687451186819413,3
+8,"Even in the same animal, not all bites are the same.",same,3,8.302261980183378,8.302261980183378,81,11.157649541945203,4
+8,"Even in the same animal, not all bites are the same.","animal,",4,21.314530884020943,10.657265442010472,81,9.1942109900463,7
+8,"Even in the same animal, not all bites are the same.",not,5,8.357612075266543,8.357612075266543,81,12.892343739900664,3
+8,"Even in the same animal, not all bites are the same.",all,6,6.939314983060479,6.939314983060479,81,12.525031703495044,3
+8,"Even in the same animal, not all bites are the same.",bites,7,13.931657503746958,13.931657503746958,81,7.085064293952548,5
+8,"Even in the same animal, not all bites are the same.",are,8,7.668538220094234,7.668538220094234,81,13.23333392735152,3
+8,"Even in the same animal, not all bites are the same.",the,9,6.786289795754955,6.786289795754955,81,15.687451186819413,3
+8,"Even in the same animal, not all bites are the same.",same.,10,12.338087501153396,6.169043750576698,81,11.157649541945203,5
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",did,1,14.161096983517982,14.161096983517982,82,11.747491530270771,3
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",not,2,13.974399052124229,13.974399052124229,82,12.892343739900664,3
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",like,3,3.881014632356216,3.881014632356216,82,12.326190730613224,4
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.","it,",4,13.841179013915244,6.920589506957622,82,13.83391514964038,3
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",but,5,4.654204520589698,4.654204520589698,82,13.16719141700017,3
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",he,6,4.5981150539386535,4.5981150539386535,82,13.340922034134344,2
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",bore,7,9.6434359060228,9.6434359060228,82,7.336936913707618,4
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",up,8,14.150625683650688,14.150625683650688,82,12.48266217255001,2
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",well,9,13.396853881274309,13.396853881274309,82,11.419548415464929,4
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",to,10,7.414054217052048,7.414054217052048,82,14.928149018365476,2
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",the,11,5.334612675372213,5.334612675372213,82,15.687451186819413,3
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.","work,",12,15.202496035287552,7.601248017643776,82,11.552915113186387,5
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",taking,13,5.549091343800699,5.549091343800699,82,10.137610607893345,6
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",pride,14,13.6976940383036,13.6976940383036,82,8.16876982367527,5
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",in,15,9.368704985918097,9.368704985918097,82,14.60582619067051,2
+9,"Buck did not like it, but he bore up well to the work, taking pride in it.",it.,16,12.474698029947755,6.237349014973877,82,13.83391514964038,3
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.","days,",1,13.241063265364993,6.620531632682496,83,10.792694816000541,5
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",neuroscience,2,12.545363142627068,12.545363142627068,83,6.248042874508429,12
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",is,3,6.215157565757973,6.215157565757973,83,13.90494258614572,2
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",beginning,4,12.693950525768996,12.693950525768996,83,9.531408863445597,9
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",to,5,7.601451926877864,7.601451926877864,83,14.928149018365476,2
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",catch,6,8.34148269333666,8.34148269333666,83,9.033245134153809,5
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",up,7,5.705859826170036,5.705859826170036,83,12.48266217255001,2
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",to,8,4.446565155811453,4.446565155811453,83,14.928149018365476,2
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",musicians,9,16.375574809001762,16.375574809001762,83,7.468513271496337,9
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",who,10,8.32168006604048,8.32168006604048,83,12.587907409973832,3
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",practice,11,9.776967298647325,9.776967298647325,83,9.5302475917227,8
+10,"These days, neuroscience is beginning to catch up to musicians who practice mentally.",mentally.,12,20.349515995304195,10.174757997652097,83,7.45182223652793,9
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,vehicles,1,15.731820383771392,15.731820383771392,84,8.619388703730907,8
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,have,2,17.320897373556576,17.320897373556576,84,13.083029857888649,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,a,3,10.80658671582848,10.80658671582848,84,14.90068259642208,1
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,halo,4,14.2262716718793,7.11313583593965,84,6.508769136971682,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,that,5,12.331467240234518,12.331467240234518,84,14.11010071456357,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,makes,6,11.237369631920934,11.237369631920934,84,10.68033229211764,5
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,owners,7,10.669385594314996,10.669385594314996,84,8.768107539675803,6
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,feel,8,17.904043658902193,17.904043658902193,84,10.676023380765145,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,righteous,9,9.468494456526468,9.468494456526468,84,6.144185634125646,9
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,and,10,14.209624024412642,14.209624024412642,84,14.964528530543614,3
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,their,11,3.4124913882809143,3.4124913882809143,84,12.71071619962035,5
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,neighbors,12,7.63640694191144,7.63640694191144,84,8.322151070212902,9
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,feel,13,10.18664293929183,10.18664293929183,84,10.676023380765145,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,guilty,14,10.279424672742795,10.279424672742795,84,8.179199798423086,6
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,for,15,8.621196596139264,8.621196596139264,84,13.908199122518191,3
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,not,16,7.744846413157558,7.744846413157558,84,12.892343739900664,3
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,doing,17,7.134314998114204,7.134314998114204,84,10.401501455574783,5
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,as,18,6.222820438503542,6.222820438503542,84,13.52016318199474,2
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,much,19,7.051699232597613,7.051699232597613,84,11.60987974704288,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,to,20,5.074197729260772,5.074197729260772,84,14.928149018365476,2
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,save,21,5.334612675372213,5.334612675372213,84,9.498447354141044,4
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,the,22,9.071293858268197,9.071293858268197,84,15.687451186819413,3
+11,Hybrid vehicles have a halo that makes owners feel righteous and their neighbors feel guilty for not doing as much to save the planet.,planet.,23,14.573142080507406,7.286571040253703,84,9.342683558963897,7
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",drinking,1,17.03904622141559,17.03904622141559,85,8.624611588183507,8
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",may,2,10.918504632032466,10.918504632032466,85,11.735428811397014,3
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",not,3,8.921301188589602,8.921301188589602,85,12.892343739900664,3
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",necessarily,4,6.341084358997277,6.341084358997277,85,8.489616423646003,11
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",kill,5,8.756998137298325,8.756998137298325,85,8.995536944936974,4
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",or,6,12.488437205831058,12.488437205831058,85,13.088086582920077,2
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",even,7,6.120541589383125,6.120541589383125,85,11.910674211722846,4
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",damage,8,7.520822192477754,7.520822192477754,85,9.166597449028265,6
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",brain,9,11.488037856625237,11.488037856625237,85,9.73678340663725,5
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.","cells,",10,15.970423505145082,7.985211752572541,85,9.671429383832344,6
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",as,11,5.114003979661191,5.114003979661191,85,13.52016318199474,2
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",commonly,12,6.270073323354088,6.270073323354088,85,7.954723334497908,8
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.","thought,",13,22.921738112094808,11.460869056047404,85,10.44897543856412,8
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",a,14,3.147282171681192,3.147282171681192,85,14.90068259642208,1
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",new,15,6.141594998580957,6.141594998580957,85,12.356172273774211,3
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",animal,16,11.618252496623764,11.618252496623764,85,9.1942109900463,6
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",study,17,11.84804059065664,11.84804059065664,85,10.479763781364658,5
+12,"Binge drinking may not necessarily kill or even damage brain cells, as commonly thought, a new animal study suggests.",suggests.,18,18.97030725025467,9.485153625127335,85,9.301551252029567,9
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.","attacked,",1,14.800220226292845,7.400110113146423,86,7.793999089503996,9
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",a,2,7.370703776178435,7.370703776178435,86,14.90068259642208,1
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",skunk,3,16.964797934336207,8.482398967168104,86,5.568344503761097,5
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",'s,4,25.940495641452465,12.970247820726232,86,13.98982010414805,2
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",natural,5,11.56035851820486,11.56035851820486,86,10.096130658401954,7
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",inclination,6,10.7006381378191,10.7006381378191,86,6.210600077024653,11
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",is,7,6.1925150890082135,6.1925150890082135,86,13.90494258614572,2
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",to,8,6.207552966372754,6.207552966372754,86,14.928149018365476,2
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",turn,9,7.6246189861593985,7.6246189861593985,86,10.345316733380217,4
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.","around,",10,9.031634364916806,4.515817182458403,86,11.290656531066679,7
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",lick,11,14.548308651316797,14.548308651316797,86,6.380122536899765,4
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",its,12,12.592481065604137,12.592481065604137,86,12.244408351795746,3
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",tail,13,9.851075270801044,9.851075270801044,86,8.041091003708633,4
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",and,14,6.315441928383939,6.315441928383939,86,14.964528530543614,3
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",spray,15,9.921361803529216,9.921361803529216,86,8.426611813185,5
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",a,16,4.113073547328377,4.113073547328377,86,14.90068259642208,1
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",noxious,17,20.052547828966226,10.026273914483113,86,5.541263545158426,7
+13,"When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",scent.,18,13.887660638149807,6.943830319074904,86,7.630461261783627,6
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,that,1,10.42895640671376,10.42895640671376,87,14.11010071456357,4
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,the,2,4.700114221893776,4.700114221893776,87,15.687451186819413,3
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,brain,3,9.36313394086864,9.36313394086864,87,9.73678340663725,5
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,has,4,9.190114776737,9.190114776737,87,12.717179229823058,3
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,to,5,8.309984026277288,8.309984026277288,87,14.928149018365476,2
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,work,6,12.67471916384111,12.67471916384111,87,11.552915113186387,4
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,with,7,5.914205156385296,5.914205156385296,87,13.689502791749778,4
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,are,8,8.29459910743781,8.29459910743781,87,13.23333392735152,3
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,imperfect,9,12.537029761067924,12.537029761067924,87,6.295266001439646,9
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,incoming,10,16.56758167153018,16.56758167153018,87,7.074116816197362,8
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,electrical,11,10.18664293929183,10.18664293929183,87,8.15248607578024,10
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,impulses,12,7.993646698065132,7.993646698065132,87,6.472346294500901,8
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,announcing,13,17.74395824355512,17.74395824355512,87,7.00397413672268,10
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,that,14,6.465382075674854,6.465382075674854,87,14.11010071456357,4
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,things,15,9.237970797914636,9.237970797914636,87,10.913833131159125,6
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,are,16,3.3273335799406074,3.3273335799406074,87,13.23333392735152,3
+14,All that the brain has to work with are imperfect incoming electrical impulses announcing that things are happening.,happening.,17,16.765043497708927,8.382521748854463,87,8.521185212685776,10
+15,There often seems to be more diving in soccer than in the Summer Olympics.,often,1,11.241904787086328,11.241904787086328,88,10.90958242467033,5
+15,There often seems to be more diving in soccer than in the Summer Olympics.,seems,2,9.22821462296927,9.22821462296927,88,10.07828084290929,5
+15,There often seems to be more diving in soccer than in the Summer Olympics.,to,3,6.040498881709588,6.040498881709588,88,14.928149018365476,2
+15,There often seems to be more diving in soccer than in the Summer Olympics.,be,4,6.238324625039508,6.238324625039508,88,13.144588558142994,2
+15,There often seems to be more diving in soccer than in the Summer Olympics.,more,5,7.660408094010983,7.660408094010983,88,12.720726930609645,4
+15,There often seems to be more diving in soccer than in the Summer Olympics.,diving,6,12.401425828841427,12.401425828841427,88,7.085901464365611,6
+15,There often seems to be more diving in soccer than in the Summer Olympics.,in,7,5.01731035485872,5.01731035485872,88,14.60582619067051,2
+15,There often seems to be more diving in soccer than in the Summer Olympics.,soccer,8,14.758933984273604,14.758933984273604,88,7.774015077250727,6
+15,There often seems to be more diving in soccer than in the Summer Olympics.,than,9,4.472951910984648,4.472951910984648,88,12.342075356929337,4
+15,There often seems to be more diving in soccer than in the Summer Olympics.,in,10,7.311863276155502,7.311863276155502,88,14.60582619067051,2
+15,There often seems to be more diving in soccer than in the Summer Olympics.,the,11,6.200005760737371,6.200005760737371,88,15.687451186819413,3
+15,There often seems to be more diving in soccer than in the Summer Olympics.,Summer,12,10.42895640671376,10.42895640671376,88,10.088846159487579,6
+15,There often seems to be more diving in soccer than in the Summer Olympics.,Olympics.,13,12.385141567601615,6.192570783800807,88,7.570443252057374,9
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,B.,1,14.507370384486661,7.2536851922433305,89,8.837536046107568,2
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,Anthony,2,13.615107447294324,13.615107447294324,89,7.9966538754626075,7
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,spent,3,13.724541288339788,13.724541288339788,89,9.85250999777126,5
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,nearly,4,10.938438846933282,10.938438846933282,89,10.199993083535142,6
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,sixty,5,13.6976940383036,13.6976940383036,89,6.824373670043086,5
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,years,6,7.710210916494802,7.710210916494802,89,11.935287020738123,5
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,of,7,8.126371313719714,8.126371313719714,89,14.959542893887448,2
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,her,8,10.97257185330274,10.97257185330274,89,12.498395184344009,3
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,life,9,6.510502510955323,6.510502510955323,89,11.43889133624386,4
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,devoted,10,9.257773425210814,9.257773425210814,89,8.169053149927343,7
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,to,11,5.6138913370276144,5.6138913370276144,89,14.928149018365476,2
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,the,12,5.767344909820717,5.767344909820717,89,15.687451186819413,3
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,cause,13,8.113550625290653,8.113550625290653,89,9.803832949375943,5
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,of,14,4.93337590337357,4.93337590337357,89,14.959542893887448,2
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,social,15,9.806820261797004,9.806820261797004,89,10.274154155101597,6
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,justice,16,6.200005760737371,6.200005760737371,89,9.249080200292113,7
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,and,17,2.772588722239781,2.772588722239781,89,14.964528530543614,3
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,equality,18,8.36168540065418,8.36168540065418,89,7.340835554123275,8
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,for,19,4.98556165654414,4.98556165654414,89,13.908199122518191,3
+16,Susan B. Anthony spent nearly sixty years of her life devoted to the cause of social justice and equality for all.,all.,20,15.42158140045597,7.710790700227985,89,12.525031703495044,4
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",for,1,5.843330816798638,5.843330816798638,90,13.908199122518191,3
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",every,2,6.09314261519501,6.09314261519501,90,11.224629871019282,5
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",six,3,10.19938196506926,10.19938196506926,90,10.310484819622369,3
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",water,4,8.386480059267395,8.386480059267395,90,11.065809894256876,5
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",bottles,5,10.42895640671376,10.42895640671376,90,7.826044013518965,7
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",we,6,5.859246272104539,5.859246272104539,90,12.932586901625537,2
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.","use,",7,13.39425309957425,6.697126549787125,90,11.337869450088004,4
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",only,8,4.999045006881427,4.999045006881427,90,11.953828499481324,4
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",one,9,9.715848483591277,9.715848483591277,90,12.73209914830059,3
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",makes,10,5.7290627232497,5.7290627232497,90,10.68033229211764,5
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",it,11,12.769553266511949,12.769553266511949,90,13.83391514964038,2
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",to,12,7.80382041561711,7.80382041561711,90,14.928149018365476,2
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",the,13,5.549091343800699,5.549091343800699,90,15.687451186819413,3
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",recycling,14,4.769586594708542,4.769586594708542,90,7.470224135899966,9
+17,"Unfortunately, for every six water bottles we use, only one makes it to the recycling bin.",bin.,15,20.675927334606815,10.337963667303407,90,7.817222785508166,4
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",in,1,6.274113732891093,6.274113732891093,91,14.60582619067051,2
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",the,2,7.03856994115582,7.03856994115582,91,15.687451186819413,3
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",United,3,9.525652870366416,9.525652870366416,91,10.361892931354786,6
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.","States,",4,11.398716437870725,5.699358218935362,91,10.614523765931814,7
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",Colombian,5,17.105535962684424,17.105535962684424,91,5.808142489980444,9
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",legislation,6,12.304798993152357,12.304798993152357,91,8.31581113188354,11
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",requires,7,9.283091233195105,9.283091233195105,91,9.067970030684457,8
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",travelers,8,16.053840593804065,16.053840593804065,91,7.511524648390866,9
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",entering,9,10.131244159902042,10.131244159902042,91,8.038834757787749,8
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",the,10,5.6180842152876505,5.6180842152876505,91,15.687451186819413,3
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",country,11,7.949440605560636,7.949440605560636,91,10.662492695887538,7
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",to,12,7.261713492470029,7.261713492470029,91,14.928149018365476,2
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",declare,13,9.010913347279288,9.010913347279288,91,6.904750769961838,7
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",cash,14,12.934230359326191,12.934230359326191,91,9.122492281402987,4
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",in,15,5.420473965978605,5.420473965978605,91,14.60582619067051,2
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",excess,16,8.750955822842363,8.750955822842363,91,8.229777750081887,6
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",of,17,5.705859826170036,5.705859826170036,91,14.959542893887448,2
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",ten,18,10.279424672742795,10.279424672742795,91,9.383116515926606,3
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",thousand,19,7.46601395598276,7.46601395598276,91,8.639764743804419,8
+18,"As in the United States, Colombian legislation requires travelers entering the country to declare cash in excess of ten thousand dollars.",dollars.,20,17.93556836796732,8.96778418398366,91,9.189525232262262,8
+19,"Stress is a risk factor for both depression and anxiety, he says.",is,1,13.058982064298672,13.058982064298672,92,13.90494258614572,2
+19,"Stress is a risk factor for both depression and anxiety, he says.",a,2,6.536477997358584,6.536477997358584,92,14.90068259642208,1
+19,"Stress is a risk factor for both depression and anxiety, he says.",risk,3,6.1925150890082135,6.1925150890082135,92,10.041421738625441,4
+19,"Stress is a risk factor for both depression and anxiety, he says.",factor,4,12.228813086174434,12.228813086174434,92,8.754476306284166,6
+19,"Stress is a risk factor for both depression and anxiety, he says.",for,5,6.931471805599453,6.931471805599453,92,13.908199122518191,3
+19,"Stress is a risk factor for both depression and anxiety, he says.",both,6,6.613018074480919,6.613018074480919,92,11.197885898951482,4
+19,"Stress is a risk factor for both depression and anxiety, he says.",depression,7,8.165850124693502,8.165850124693502,92,8.736168065858228,10
+19,"Stress is a risk factor for both depression and anxiety, he says.",and,8,11.022404227050616,11.022404227050616,92,14.964528530543614,3
+19,"Stress is a risk factor for both depression and anxiety, he says.","anxiety,",9,16.353005739572218,8.176502869786109,92,8.258163361537619,8
+19,"Stress is a risk factor for both depression and anxiety, he says.",he,10,3.014461258660268,3.014461258660268,92,13.340922034134344,2
+19,"Stress is a risk factor for both depression and anxiety, he says.",says.,11,15.202030160599413,7.601015080299707,92,12.36796612947765,5
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",it,1,7.234902235019373,7.234902235019373,93,13.83391514964038,2
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",comes,2,7.8419202618493795,7.8419202618493795,93,10.296340122593449,5
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",to,3,5.477226782571055,5.477226782571055,93,14.928149018365476,2
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",having,4,8.23532249750827,8.23532249750827,93,10.40961214374347,6
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",a,5,5.802087858264589,5.802087858264589,93,14.90068259642208,1
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",lasting,6,12.984874092144947,12.984874092144947,93,7.635303886259415,7
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",and,7,4.244475013695076,4.244475013695076,93,14.964528530543614,3
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",fulfilling,8,11.269556318416836,11.269556318416836,93,6.505784060128229,10
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.","relationship,",9,14.091610812670538,7.045805406335269,93,9.729907675678929,13
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",common,10,14.532923732477316,14.532923732477316,93,9.98109653186311,6
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",wisdom,11,8.460266229326626,8.460266229326626,93,8.336630087637147,6
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",says,12,7.922772358478475,7.922772358478475,93,12.36796612947765,4
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",that,13,7.2243758220323855,7.2243758220323855,93,14.11010071456357,4
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",feeling,14,12.071184141970852,12.071184141970852,93,9.525297086562844,7
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",close,15,8.34148269333666,8.34148269333666,93,10.167312288457342,5
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",to,16,5.124208149835433,5.124208149835433,93,14.928149018365476,2
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",your,17,8.152516593824037,8.152516593824037,93,12.693587676276655,4
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",romantic,18,4.68678069102431,4.68678069102431,93,8.198089248956116,8
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",partner,19,4.151100942917617,4.151100942917617,93,9.056256356593467,7
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",is,20,6.665508257102315,6.665508257102315,93,13.90494258614572,2
+20,"When it comes to having a lasting and fulfilling relationship, common wisdom says that feeling close to your romantic partner is paramount.",paramount.,21,21.691228496624518,10.845614248312259,93,6.836259277277067,10
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",himself,1,17.2680548921822,17.2680548921822,94,10.134757991061946,7
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",probably,2,15.31795186486685,15.31795186486685,94,10.18968101756145,8
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",won,3,10.420924235016496,10.420924235016496,94,9.57289797907307,3
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",around,4,10.034302214709813,10.034302214709813,94,11.290656531066679,6
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",half,5,10.25880538554006,10.25880538554006,94,10.399280753468156,4
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",a,6,11.342227508714195,11.342227508714195,94,14.90068259642208,1
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",million,7,13.91505961233792,13.91505961233792,94,10.922677774226747,7
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.","livres,",8,24.712137397015912,8.237379132338637,94,1.9459101490553132,7
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",a,9,10.84863495207198,10.84863495207198,94,14.90068259642208,1
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",large,10,9.665741663537098,9.665741663537098,94,10.74343705115356,5
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.","fortune,",11,18.459166516985523,9.229583258492761,94,8.402231172946555,8
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",which,12,8.900098980939,8.900098980939,94,12.3206906778434,5
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",he,13,5.522010385198028,5.522010385198028,94,13.340922034134344,2
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",then,14,6.086408583013665,6.086408583013665,94,11.864398904509496,4
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",made,15,8.06385095673838,8.06385095673838,94,11.383147021215013,4
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",even,16,7.229625177918529,7.229625177918529,94,11.910674211722846,4
+21,"Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",larger.,17,16.481625824043604,8.240812912021802,94,9.52602664083756,7
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",preparing,1,10.749428301988532,10.749428301988532,95,8.057694194815587,9
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",to,2,5.6138913370276144,5.6138913370276144,95,14.928149018365476,2
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",check,3,9.199504517086838,9.199504517086838,95,9.69547888880619,5
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",out,4,5.134517519494295,5.134517519494295,95,12.432777846632938,3
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",of,5,7.27815221881319,7.27815221881319,95,14.959542893887448,2
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",their,6,10.090182673104268,10.090182673104268,95,12.71071619962035,5
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",hotel,7,8.681160060906821,8.681160060906821,95,9.29090601981575,5
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.","room,",8,8.977393338108255,4.488696669054128,95,10.530147648073713,5
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",some,9,10.432996816250766,10.432996816250766,95,12.138088193988303,4
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",frequent,10,15.867161731641154,15.867161731641154,95,8.17188200612782,8
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",travelers,11,9.572484170050515,9.572484170050515,95,7.511524648390866,9
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",pile,12,14.25482946118069,14.25482946118069,95,7.905810312658931,4
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",up,13,4.090932421451164,4.090932421451164,95,12.48266217255001,2
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",their,14,6.8347421791409015,6.8347421791409015,95,12.71071619962035,5
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",used,15,11.78350206951907,11.78350206951907,95,10.985428306916265,4
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",bath,16,11.04454535292783,11.04454535292783,95,7.906178840394815,4
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",towels,17,9.688556341303268,9.688556341303268,95,7.233455418621439,6
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",on,18,4.098258461543237,4.098258461543237,95,13.632841740882444,2
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",the,19,5.187721555557759,5.187721555557759,95,15.687451186819413,3
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",bathroom,20,10.300478081940629,10.300478081940629,95,8.031710375322042,8
+22,"When preparing to check out of their hotel room, some frequent travelers pile up their used bath towels on the bathroom floor.",floor.,21,14.119854024983933,7.059927012491967,95,9.588160179264023,6
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,showing,1,13.154292244102995,13.154292244102995,96,8.870382066070137,7
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,that,2,7.17334434201994,7.17334434201994,96,14.11010071456357,4
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,a,3,5.996604688152362,5.996604688152362,96,14.90068259642208,1
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,tiny,4,11.665719033862686,11.665719033862686,96,9.312264991698108,4
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,European,5,10.87348095065851,10.87348095065851,96,9.254357257392957,8
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,river,6,15.26102592807084,15.26102592807084,96,9.832474785289708,5
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,bug,7,12.718521786499505,12.718521786499505,96,7.422373700986824,3
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,called,8,12.055679955434886,12.055679955434886,96,10.839227908231596,6
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,the,9,5.556965400231605,5.556965400231605,96,15.687451186819413,3
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,water,10,8.407622495841204,8.407622495841204,96,11.065809894256876,5
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,boatman,11,15.548214051389337,7.7741070256946685,96,3.7376696182833684,7
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,may,12,11.47647703422416,11.47647703422416,96,11.735428811397014,3
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,be,13,6.900700146932699,6.900700146932699,96,13.144588558142994,2
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,the,14,7.714475315281259,7.714475315281259,96,15.687451186819413,3
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,loudest,15,19.827940403701987,9.913970201850994,96,5.493061443340548,7
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,animal,16,11.523544545082144,11.523544545082144,96,9.1942109900463,6
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,on,17,6.820657439259163,6.820657439259163,96,13.632841740882444,2
+23,Research showing that a tiny European river bug called the water boatman may be the loudest animal on earth.,earth.,18,15.641168982279815,7.820584491139908,96,10.044770077370018,6
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",the,1,6.015181073725298,6.015181073725298,97,15.687451186819413,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",new,2,9.034629873896606,9.034629873896606,97,12.356172273774211,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",world,3,7.846786451500552,7.846786451500552,97,11.516708301015449,5
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",was,4,8.264521652200532,8.264521652200532,97,13.430125979710267,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",first,5,6.568566311910085,6.568566311910085,97,11.942400025538745,5
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",discovered,6,9.71190370530026,9.71190370530026,97,9.382611592916636,10
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",it,7,6.996010326737024,6.996010326737024,97,13.83391514964038,2
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",was,8,3.0294991360248087,3.0294991360248087,97,13.430125979710267,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",found,9,12.588104691004338,12.588104691004338,97,11.031334966472572,5
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",to,10,7.352685270675757,7.352685270675757,97,14.928149018365476,2
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.","be,",11,12.531953197694218,6.265976598847109,97,13.144588558142994,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",like,12,6.422209903809645,6.422209903809645,97,12.326190730613224,4
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",the,13,6.708328254285243,6.708328254285243,97,15.687451186819413,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.","old,",14,15.077182144418034,7.538591072209017,97,10.78987562305597,4
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",well,15,8.139358509246525,8.139358509246525,97,11.419548415464929,4
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",stocked,16,16.604760674771935,16.604760674771935,97,6.535241271013659,7
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",with,17,8.159161136542705,8.159161136542705,97,13.689502791749778,4
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",plants,18,7.520822192477754,7.520822192477754,97,9.835743900449609,6
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",and,19,4.592072739482691,4.592072739482691,97,14.964528530543614,3
+24,"When the new world was first discovered it was found to be, like the old, well stocked with plants and animals.",animals.,20,17.171481723519477,8.585740861759739,97,9.46568002150671,8
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,in,1,7.28926344423826,7.28926344423826,98,14.60582619067051,2
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,Georgia,2,8.914183720820738,8.914183720820738,98,8.488999457045455,7
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,have,3,8.016504836141182,8.016504836141182,98,13.083029857888649,4
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,shut,4,9.892651697646784,9.892651697646784,98,8.448271745949816,4
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,down,5,1.3902082604410269,1.3902082604410269,98,11.473165406396351,4
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,a,6,6.0999223021803886,6.0999223021803886,98,14.90068259642208,1
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,lemonade,7,17.138848382975183,8.569424191487592,98,6.075346031088684,8
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,stand,8,10.965651410458168,10.965651410458168,98,9.750860711077213,5
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,run,9,11.219431931234269,11.219431931234269,98,10.393600134704577,3
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,by,10,6.274113732891093,6.274113732891093,98,13.154086825400123,2
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,three,11,8.159161136542705,8.159161136542705,98,11.30402992692122,5
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,girls,12,12.372852456397371,12.372852456397371,98,9.372459221452617,5
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,trying,13,8.32168006604048,8.32168006604048,98,10.173705511236266,6
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,to,14,4.190631781674252,4.190631781674252,98,14.928149018365476,2
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,save,15,8.935689926041702,8.935689926041702,98,9.498447354141044,4
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,up,16,6.772866775422815,6.772866775422815,98,12.48266217255001,2
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,for,17,2.961179892047331,2.961179892047331,98,13.908199122518191,3
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,a,18,6.0999223021803886,6.0999223021803886,98,14.90068259642208,1
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,trip,19,10.52628475067432,10.52628475067432,98,9.42424134192346,4
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,to,20,5.031231693377328,5.031231693377328,98,14.928149018365476,2
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,a,21,4.265981218916039,4.265981218916039,98,14.90068259642208,1
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,water,22,8.715449134385453,8.715449134385453,98,11.065809894256876,5
+25,Police in Georgia have shut down a lemonade stand run by three girls trying to save up for a trip to a water park.,park.,23,12.820226747512347,6.4101133737561735,98,10.1104610706877,5
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,early,1,8.928469678068215,8.928469678068215,99,10.717147373323323,5
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,task,2,8.81951849427966,8.81951849427966,99,8.88875674784872,4
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,will,3,6.893152941297316,6.893152941297316,99,12.444770597504213,4
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,be,4,8.478448548409817,8.478448548409817,99,13.144588558142994,2
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,to,5,4.4107557031147415,4.4107557031147415,99,14.928149018365476,2
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,make,6,7.267163097237595,7.267163097237595,99,11.738761388595142,4
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,sure,7,4.844248123477562,4.844248123477562,99,10.387424905016408,4
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,the,8,7.527889359700847,7.527889359700847,99,15.687451186819413,3
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,newfound,9,11.554127968454225,11.554127968454225,99,6.5337888379333435,8
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,microbes,10,13.996475003823427,13.996475003823427,99,7.280697195384741,8
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,were,11,6.5740159166776495,6.5740159166776495,99,12.399173397495133,4
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,not,12,6.766222232704146,6.766222232704146,99,12.892343739900664,3
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,introduced,13,11.237369631920934,11.237369631920934,99,8.840001065843392,10
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,while,14,11.219431931234269,11.219431931234269,99,11.508786912965586,5
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,drilling,15,11.210582315957284,11.210582315957284,99,7.213031659834869,8
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,through,16,9.74797976177407,9.74797976177407,99,11.60074401610714,7
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,the,17,4.844248123477562,4.844248123477562,99,15.687451186819413,3
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,ice,18,10.951952566100006,10.951952566100006,99,9.602585141913492,3
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,into,19,7.881529399944426,7.881529399944426,99,12.285669099801316,4
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,the,20,6.915967619063488,6.915967619063488,99,15.687451186819413,3
+26,An early task will be to make sure the newfound microbes were not introduced while drilling through the ice into the lake.,lake.,21,17.29259528749791,8.646297643748955,99,9.435641593844192,5
+27,Lady Gaga 's YouTube account was suspended Thursday.,Gaga,1,9.572484170050515,9.572484170050515,100,6.0844994130751715,4
+27,Lady Gaga 's YouTube account was suspended Thursday.,'s,2,14.277482969187517,7.1387414845937585,100,13.98982010414805,2
+27,Lady Gaga 's YouTube account was suspended Thursday.,YouTube,3,13.704338581022268,13.704338581022268,100,7.69484807238461,7
+27,Lady Gaga 's YouTube account was suspended Thursday.,account,4,12.823329663292752,12.823329663292752,100,9.38353709043758,7
+27,Lady Gaga 's YouTube account was suspended Thursday.,was,5,7.060548847874595,7.060548847874595,100,13.430125979710267,3
+27,Lady Gaga 's YouTube account was suspended Thursday.,suspended,6,12.445877591412264,12.445877591412264,100,7.506591780070841,9
+27,Lady Gaga 's YouTube account was suspended Thursday.,Thursday.,7,20.849622610507048,10.424811305253524,100,8.316055720364643,9
+28,John Thornton asked little of man or nature.,Thornton,1,14.79796332817934,14.79796332817934,101,6.073044534100405,8
+28,John Thornton asked little of man or nature.,asked,2,10.314764039188104,10.314764039188104,101,10.32137518064285,5
+28,John Thornton asked little of man or nature.,little,3,11.393785318379043,11.393785318379043,101,11.160014855596954,6
+28,John Thornton asked little of man or nature.,of,4,6.510502510955323,6.510502510955323,101,14.959542893887448,2
+28,John Thornton asked little of man or nature.,man,5,7.549395564921811,7.549395564921811,101,10.852961578200516,3
+28,John Thornton asked little of man or nature.,or,6,7.106011221951353,7.106011221951353,101,13.088086582920077,2
+28,John Thornton asked little of man or nature.,nature.,7,18.994147326892886,9.497073663446443,101,9.77956697061665,7
+29,Proper ventilation will make a backdraft less likely.,ventilation,1,8.87251102442017,8.87251102442017,102,6.650279048587422,11
+29,Proper ventilation will make a backdraft less likely.,will,2,19.936018663343106,19.936018663343106,102,12.444770597504213,4
+29,Proper ventilation will make a backdraft less likely.,make,3,8.83906309035263,8.83906309035263,102,11.738761388595142,4
+29,Proper ventilation will make a backdraft less likely.,a,4,10.090182673104268,10.090182673104268,102,14.90068259642208,1
+29,Proper ventilation will make a backdraft less likely.,backdraft,5,16.242802599438605,8.121401299719302,102,2.302585092994046,9
+29,Proper ventilation will make a backdraft less likely.,less,6,17.427119586811884,17.427119586811884,102,10.96628266278324,4
+29,Proper ventilation will make a backdraft less likely.,likely.,7,20.82415001574124,10.41207500787062,102,10.288273649435892,7
+30,"For centuries, time was measured by the position of the sun with the use of sundials.","centuries,",1,16.414343816960283,8.207171908480142,103,8.414495793177895,10
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",time,2,10.293410914717535,10.293410914717535,103,12.165474584268328,4
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",was,3,7.44621132868658,7.44621132868658,103,13.430125979710267,3
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",measured,4,11.860619372863502,11.860619372863502,103,8.19863945529737,8
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",by,5,4.494574374997813,4.494574374997813,103,13.154086825400123,2
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",the,6,5.267308993476107,5.267308993476107,103,15.687451186819413,3
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",position,7,7.799158402511298,7.799158402511298,103,9.806701283848437,8
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",of,8,4.556566051025781,4.556566051025781,103,14.959542893887448,2
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",the,9,4.748233470237974,4.748233470237974,103,15.687451186819413,3
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",sun,10,11.745183205216934,11.745183205216934,103,9.89176915958193,3
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",with,11,8.345490714734199,8.345490714734199,103,13.689502791749778,4
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",the,12,6.274113732891093,6.274113732891093,103,15.687451186819413,3
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",use,13,10.007490957259154,10.007490957259154,103,11.337869450088004,3
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",of,14,2.67585909578123,2.67585909578123,103,14.959542893887448,2
+30,"For centuries, time was measured by the position of the sun with the use of sundials.",sundials.,15,33.61087479686801,11.203624932289337,103,2.3978952727983707,9
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",girl,1,13.29002385763712,13.29002385763712,104,9.440419814291506,4
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",'s,2,15.219176793255642,7.609588396627821,104,13.98982010414805,2
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",feet,3,9.552144485813391,9.552144485813391,104,10.32891867328517,4
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",were,4,6.971317714146653,6.971317714146653,104,12.399173397495133,4
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",then,5,10.879790119851776,10.879790119851776,104,11.864398904509496,4
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",re-wrapped,6,42.67099056216196,10.66774764054049,104,,10
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",even,7,10.57640913785689,10.57640913785689,104,11.910674211722846,4
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",tighter,8,10.669385594314996,10.669385594314996,104,6.6240652277998935,7
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",than,9,7.17334434201994,7.17334434201994,104,12.342075356929337,4
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.","before,",10,18.99863571921602,9.49931785960801,104,11.534970673838794,7
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",causing,11,13.639800059884696,13.639800059884696,104,8.272826003650401,7
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",her,12,13.045092952138004,13.045092952138004,104,12.498395184344009,3
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",footprint,13,19.14215750718133,19.14215750718133,104,6.51025834052315,9
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",to,14,8.193062688218387,8.193062688218387,104,14.928149018365476,2
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",shrink,15,7.753696028434541,7.753696028434541,104,7.149131598557407,6
+31,"The girl 's feet were then re-wrapped even tighter than before, causing her footprint to shrink further.",further.,16,16.818024803274945,8.409012401637472,104,9.655026193237628,8
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",astronauts,1,13.447115716055196,13.447115716055196,105,7.00033446027523,10
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",used,2,8.626501648368958,8.626501648368958,105,10.985428306916265,4
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",a,3,5.966390909555866,5.966390909555866,105,14.90068259642208,1
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",hefty,4,11.96270349897678,11.96270349897678,105,6.966967138613983,5
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",robotic,5,13.646069672898292,13.646069672898292,105,6.992096427415888,7
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",arm,6,5.084001729357392,5.084001729357392,105,8.989194823324645,3
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",to,7,7.672628205345759,7.672628205345759,105,14.928149018365476,2
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",move,8,11.90372949651723,11.90372949651723,105,10.183956170469607,4
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",the,9,5.455565285789875,5.455565285789875,105,15.687451186819413,3
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",bus-size,10,34.79312724312917,11.597709081043057,105,2.0794415416798357,8
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.","canister,",11,26.77026944833723,8.923423149445744,105,5.934894195619588,9
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",stuffed,12,11.93051681248088,11.93051681248088,105,7.550135342488429,7
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",with,13,5.261409271348918,5.261409271348918,105,13.689502791749778,4
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",nearly,14,11.541782132631925,11.541782132631925,105,10.199993083535142,6
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",three,15,8.25714154490291,8.25714154490291,105,11.30402992692122,5
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",tons,16,13.886660137816222,13.886660137816222,105,8.161375023197486,4
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",of,17,3.5428532061441578,3.5428532061441578,105,14.959542893887448,2
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",packing,18,8.069930002814763,8.069930002814763,105,7.256297239690681,7
+32,"The astronauts used a hefty robotic arm to move the bus-size canister, stuffed with nearly three tons of packing foam.",foam.,19,17.31257454642928,8.65628727321464,105,7.5745584842024805,5
+33,"Very similar, but even more striking, is the evidence from athletic training.","similar,",1,18.33380879716609,9.166904398583045,106,9.816076095525158,8
+33,"Very similar, but even more striking, is the evidence from athletic training.",but,2,6.746549467105441,6.746549467105441,106,13.16719141700017,3
+33,"Very similar, but even more striking, is the evidence from athletic training.",even,3,10.056281121428588,10.056281121428588,106,11.910674211722846,4
+33,"Very similar, but even more striking, is the evidence from athletic training.",more,4,2.901665764514924,2.901665764514924,106,12.720726930609645,4
+33,"Very similar, but even more striking, is the evidence from athletic training.","striking,",5,16.939520954332774,8.469760477166387,106,8.137688184977605,9
+33,"Very similar, but even more striking, is the evidence from athletic training.",is,6,4.034179604858714,4.034179604858714,106,13.90494258614572,2
+33,"Very similar, but even more striking, is the evidence from athletic training.",the,7,5.669819889686839,5.669819889686839,106,15.687451186819413,3
+33,"Very similar, but even more striking, is the evidence from athletic training.",evidence,8,11.029730267142693,11.029730267142693,106,9.729729226402661,8
+33,"Very similar, but even more striking, is the evidence from athletic training.",from,9,6.278170533586708,6.278170533586708,106,13.161822523668638,4
+33,"Very similar, but even more striking, is the evidence from athletic training.",athletic,10,11.541782132631925,11.541782132631925,106,7.753194269884341,8
+33,"Very similar, but even more striking, is the evidence from athletic training.",training.,11,14.624053136245976,7.312026568122988,106,9.609854474590907,9
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",was,1,8.0281328741363,8.0281328741363,108,13.430125979710267,3
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",a,2,6.200005760737371,6.200005760737371,108,14.90068259642208,1
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",forbidding,3,21.295411981632185,10.647705990816092,108,5.808142489980444,10
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.","challenge,",4,17.223563168772984,8.611781584386492,108,9.360310898552477,10
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",and,5,5.187721555557759,5.187721555557759,108,14.964528530543614,3
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",it,6,8.446843208994487,8.446843208994487,108,13.83391514964038,2
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",says,7,9.916519179053427,9.916519179053427,108,12.36796612947765,4
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",much,8,10.938438846933282,10.938438846933282,108,11.60987974704288,4
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",for,9,5.97236107654237,5.97236107654237,108,13.908199122518191,3
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",Winstanley's,10,42.65842867766246,10.664607169415614,108,,12
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",persuasive,11,15.845655526420192,15.845655526420192,108,6.230481447578482,10
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.","abilities,",12,16.44282785450262,8.22141392725131,108,7.475339236566737,10
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",not,13,7.261713492470029,7.261713492470029,108,12.892343739900664,3
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",to,14,6.380824687646791,6.380824687646791,108,14.928149018365476,2
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",mention,15,7.261713492470029,7.261713492470029,108,8.610683534503575,7
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",his,16,11.372842144533802,11.372842144533802,108,13.034853694462726,3
+34,"It was a forbidding challenge, and it says much for Winstanley's persuasive abilities, not to mention his self-confidence.",self-confidence.,17,31.14396329496226,7.785990823740565,108,5.966146739123692,16
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",schools,1,18.55636884494189,18.55636884494189,109,9.485924559229828,7
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",still,2,8.264521652200532,8.264521652200532,109,11.446967269905677,5
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.","closed,",3,18.288012950806127,9.144006475403064,109,8.794521851788527,7
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",cars,4,11.228360561978567,11.228360561978567,109,9.429797135432397,4
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",still,5,6.465382075674854,6.465382075674854,109,11.446967269905677,5
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",buried,6,11.33721496689065,11.33721496689065,109,8.051340933292979,6
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",and,7,4.352202394363168,4.352202394363168,109,14.964528530543614,3
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",streets,8,10.28639334205889,10.28639334205889,109,8.648045999835,7
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",still,9,6.641838513016411,6.641838513016411,109,11.446967269905677,5
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",blocked,10,11.029730267142693,11.029730267142693,109,7.473069088032197,7
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",by,11,5.427394408823179,5.427394408823179,109,13.154086825400123,2
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",the,12,5.150183636238694,5.150183636238694,109,15.687451186819413,3
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",widespread,13,12.579408984036784,12.579408984036784,109,8.04012466444838,10
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",weekend,14,11.505633618515612,11.505633618515612,109,8.804325112562537,7
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.","snowstorm,",15,21.6827805724193,7.227593524139767,109,5.594711379601839,10
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",officials,16,13.335076521578063,13.335076521578063,109,9.374073563958785,9
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",are,17,6.951196310947232,6.951196310947232,109,13.23333392735152,3
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",asking,18,10.690111724832112,10.690111724832112,109,8.94832604627298,6
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",people,19,8.794039408978675,8.794039408978675,109,12.076567422709935,6
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",to,20,5.069331539609599,5.069331539609599,109,14.928149018365476,2
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",help,21,6.412864041391408,6.412864041391408,109,11.02765387128589,4
+35,"With schools still closed, cars still buried and streets still blocked by the widespread weekend snowstorm, officials are asking people to help out.",out.,22,11.400712363519812,5.700356181759906,109,12.432777846632938,4
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",sterilization,1,23.389618245218127,11.694809122609064,110,5.225746673713202,13
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",is,2,10.43705361694638,10.43705361694638,110,13.90494258614572,2
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",limited,3,13.522017024228314,13.522017024228314,110,9.198267790741914,7
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",in,4,4.333422499711571,4.333422499711571,110,14.60582619067051,2
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",the,5,6.155880955828433,6.155880955828433,110,15.687451186819413,3
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",types,6,10.293410914717535,10.293410914717535,110,9.058237593766226,5
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",of,7,7.092154187289927,7.092154187289927,110,14.959542893887448,2
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",medical,8,14.390841218863544,14.390841218863544,110,10.10895581217033,7
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",waste,9,9.6434359060228,9.6434359060228,110,8.765146421639022,5
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",it,10,9.756176528978248,9.756176528978248,110,13.83391514964038,2
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",can,11,8.329554122471386,8.329554122471386,110,12.661279845533151,3
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.","treat,",12,13.400421819685576,6.700210909842788,110,8.886685639065584,6
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",but,13,6.585005038253245,6.585005038253245,110,13.16719141700017,3
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",is,14,5.040621433727167,5.040621433727167,110,13.90494258614572,2
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",appropriate,15,12.541187771216586,12.541187771216586,110,8.598035579260339,11
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",for,16,4.734247228263234,4.734247228263234,110,13.908199122518191,3
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",laboratory,17,10.401121607720317,10.401121607720317,110,8.341886969516187,10
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",substances,18,11.090354888959125,11.090354888959125,110,7.387090235656757,10
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",contaminated,19,7.452768729232739,7.452768729232739,110,6.967909201801884,12
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",with,20,3.347952867143343,3.347952867143343,110,13.689502791749778,4
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",infectious,21,9.96097094162426,9.96097094162426,110,7.119635638017636,10
+36,"Steam sterilization is limited in the types of medical waste it can treat, but is appropriate for laboratory substances contaminated with infectious organisms.",organisms.,22,19.939543078725528,9.969771539362764,110,7.639161171659173,10
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",coal,1,13.773331452509218,13.773331452509218,111,8.000684784514748,4
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",to,2,5.347351701149643,5.347351701149643,111,14.928149018365476,2
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.","cars,",3,14.863497369558413,7.4317486847792065,111,9.429797135432397,5
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",Chinese,4,16.976703090841454,16.976703090841454,111,9.151651375627504,7
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",floods,5,14.182374381965268,14.182374381965268,111,6.669498089857879,6
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",tangle,6,25.800947374291788,12.900473687145894,111,6.1675164908883415,6
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",supply,7,13.276894566195327,13.276894566195327,111,8.998013113095823,6
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",chains,8,10.669385594314996,10.669385594314996,111,7.590346945602565,6
+37,"From coal to cars, Chinese floods tangle supply chains worldwide.",worldwide.,9,12.897583736216419,6.448791868108209,111,8.435332164935916,10
+38,This new film marks 10 years since the death of the superstar.,new,1,7.758150378783921,7.758150378783921,112,12.356172273774211,3
+38,This new film marks 10 years since the death of the superstar.,film,2,9.144444739903811,9.144444739903811,112,9.897972371848018,4
+38,This new film marks 10 years since the death of the superstar.,marks,3,12.845676961984749,12.845676961984749,112,8.308691916838898,5
+38,This new film marks 10 years since the death of the superstar.,10,4,10.86098078789428,10.86098078789428,112,10.724764060806601,2
+38,This new film marks 10 years since the death of the superstar.,years,5,11.499733896388426,11.499733896388426,112,11.935287020738123,5
+38,This new film marks 10 years since the death of the superstar.,since,6,11.13427412289396,11.13427412289396,112,11.097152412072655,5
+38,This new film marks 10 years since the death of the superstar.,the,7,6.714597867298839,6.714597867298839,112,15.687451186819413,3
+38,This new film marks 10 years since the death of the superstar.,death,8,12.318044219902378,12.318044219902378,112,10.061687167209673,5
+38,This new film marks 10 years since the death of the superstar.,of,9,4.836526077383652,4.836526077383652,112,14.959542893887448,2
+38,This new film marks 10 years since the death of the superstar.,the,10,4.887819371771203,4.887819371771203,112,15.687451186819413,3
+38,This new film marks 10 years since the death of the superstar.,superstar.,11,17.430932071397372,8.715466035698686,112,7.030857476116121,10
