@@ -77,7 +77,7 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8,
         for ctx_size in range(target_pos + 1):
             trajectory = []
 
-            x = model.graph.sample_limit(batch_size, 1024).to(model.device)
+            x = model.graph.sample_limit(batch_size, seq_len).to(model.device)
 
             def project(x, ctx_sz=ctx_size, tgt_pos=target_pos):
                 if ctx_sz > 0:
@@ -236,180 +236,153 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8,
     return pd.DataFrame(detail_rows), pd.DataFrame(summary_rows)
 
 
+def _build_context_heatmap(subset_df, prob_column='target_prob_at_self'):
+    """
+    Build a heatmap of P(target) vs (context_size, timestep).
+
+    Returns the averaged heatmap, contribution counts, context_size list,
+    and sorted timestep list.
+    """
+    valid = subset_df.dropna(subset=[prob_column])
+    if len(valid) == 0:
+        return None, None, None, None
+
+    ctx_sizes = sorted(valid['context_size'].unique())
+    timesteps = sorted(valid['timestep'].unique(), reverse=True)
+
+    n_ctx = len(ctx_sizes)
+    n_ts = len(timesteps)
+
+    heatmap = np.zeros((n_ctx, n_ts))
+    counts = np.zeros((n_ctx, n_ts), dtype=int)
+
+    ctx_to_row = {c: i for i, c in enumerate(ctx_sizes)}
+    ts_to_col = {t: i for i, t in enumerate(timesteps)}
+
+    for _, row in valid.iterrows():
+        r = ctx_to_row.get(row['context_size'])
+        c = ts_to_col.get(row['timestep'])
+        if r is None or c is None:
+            continue
+        heatmap[r, c] += row[prob_column]
+        counts[r, c] += 1
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        avg_heatmap = np.where(counts > 0, heatmap / counts, 0.0)
+
+    return avg_heatmap, counts, ctx_sizes, timesteps
+
+
+def _render_context_heatmap_grid(slices_data, output_path, ncols=None):
+    """
+    Render a grid of context-expansion heatmaps.
+
+    slices_data: list of (label, heatmap, counts, ctx_sizes, timesteps)
+    """
+    n = len(slices_data)
+    if n == 0:
+        return
+    if ncols is None:
+        ncols = min(n, 3)
+    nrows = (n + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(nrows, ncols,
+                             figsize=(6 * ncols, 5 * nrows),
+                             squeeze=False)
+
+    vmax_global = 0
+    for _, hm, _, _, _ in slices_data:
+        if hm is not None:
+            vmax_global = max(vmax_global, hm.max())
+    if vmax_global == 0:
+        vmax_global = 1e-6
+
+    for idx, (label, hm, ct, ctx_sizes, ts) in enumerate(slices_data):
+        r, c = divmod(idx, ncols)
+        ax = axes[r][c]
+
+        if hm is None:
+            ax.set_title(f'{label}\n(no data)')
+            ax.axis('off')
+            continue
+
+        im = ax.imshow(hm, aspect='auto', cmap='YlOrRd',
+                        interpolation='nearest',
+                        vmin=0, vmax=vmax_global)
+
+        ax.set_yticks(range(len(ctx_sizes)))
+        ax.set_yticklabels([str(s) for s in ctx_sizes], fontsize=8)
+
+        n_ts = len(ts)
+        tick_step = max(1, n_ts // 8)
+        x_tick_idx = list(range(0, n_ts, tick_step))
+        ax.set_xticks(x_tick_idx)
+        ax.set_xticklabels([f'{ts[i]:.2f}' for i in x_tick_idx],
+                            fontsize=7, rotation=45)
+        ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
+        ax.set_ylabel('Context words revealed', fontsize=10)
+
+        total_sents = ct.max() if ct.max() > 0 else 0
+        min_sents = ct[ct > 0].min() if (ct > 0).any() else 0
+        ax.set_title(f'{label}\n(N={total_sents}, min={min_sents})',
+                      fontsize=11)
+        plt.colorbar(im, ax=ax, shrink=0.8, label='Mean P(target)')
+
+    for idx in range(n, nrows * ncols):
+        r, c = divmod(idx, ncols)
+        axes[r][c].axis('off')
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f"  Saved plot: {output_path}")
+    plt.close()
+
+
 def plot_context_expansion(detail_df, summary_df, output_dir):
-    """Create visualizations of context expansion results."""
-    if len(summary_df) == 0:
+    """Create heatmap visualizations of context expansion results."""
+    if len(detail_df) == 0:
         print("  No data to plot.")
         return
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    has_ambig = ('ambiguous' in detail_df.columns and
+                 detail_df['ambiguous'].notna().any())
+    has_base = 'base_condition' in detail_df.columns
 
-    # 1. Final surprisal vs context size
-    ax = axes[0, 0]
-    grouped = summary_df.groupby('context_size').agg({
-        'final_surprisal': ['mean', 'std'],
-    }).reset_index()
-    grouped.columns = ['ctx_size', 'surp_mean', 'surp_std']
-
-    ax.errorbar(grouped['ctx_size'], grouped['surp_mean'],
-                yerr=grouped['surp_std'], fmt='o-', capsize=3)
-    ax.set_xlabel('Number of context words revealed', fontsize=12)
-    ax.set_ylabel('Final surprisal of target (nats)', fontsize=12)
-    ax.set_title('How context reduces target surprise', fontsize=13)
-    ax.grid(True, alpha=0.3)
-
-    # 2. Final accuracy vs context size
-    ax = axes[0, 1]
-    grouped = summary_df.groupby('context_size')['final_correct'].mean()
-    ax.plot(grouped.index, grouped.values, 'o-', color='green', markersize=5)
-    ax.set_xlabel('Number of context words revealed', fontsize=12)
-    ax.set_ylabel('P(target correctly denoised)', fontsize=12)
-    ax.set_title('Denoising accuracy vs context', fontsize=13)
-    ax.set_ylim(-0.05, 1.05)
-    ax.grid(True, alpha=0.3)
-
-    # 3. Final rank vs context size
-    ax = axes[1, 0]
-    grouped = summary_df.groupby('context_size').agg({
-        'final_rank': ['mean', 'median']
-    }).reset_index()
-    grouped.columns = ['ctx_size', 'rank_mean', 'rank_median']
-
-    ax.plot(grouped['ctx_size'], grouped['rank_mean'],
-            'o-', label='Mean', markersize=4)
-    ax.plot(grouped['ctx_size'], grouped['rank_median'],
-            's--', label='Median', markersize=4)
-    ax.set_xlabel('Number of context words revealed', fontsize=12)
-    ax.set_ylabel('Rank of target token', fontsize=12)
-    ax.set_title('Target rank vs context amount', fontsize=13)
-    ax.set_yscale('log')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-
-    # 4. Per-item trajectories (context fraction vs final prob)
-    ax = axes[1, 1]
-    unique_items = summary_df['item'].unique()[:6]
-    for item in unique_items:
-        item_df = summary_df[summary_df['item'] == item].sort_values(
-            'context_size')
-        cond = item_df['condition'].iloc[0]
-        ax.plot(item_df['context_fraction'], item_df['final_prob'],
-                'o-', alpha=0.7, markersize=3,
-                label=f'Item {item} ({cond})')
-    ax.set_xlabel('Context fraction (0 = no context, 1 = full)', fontsize=12)
-    ax.set_ylabel('P(target) at final step', fontsize=12)
-    ax.set_title('Per-item context effect', fontsize=13)
-    ax.legend(fontsize=7, ncol=2)
-    ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    plot_path = f'{output_dir}/exp3_context_expansion.png'
-    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
-    print(f"  Saved plot: {plot_path}")
-    plt.close()
-
-    # Condition comparison
-    if 'condition' in summary_df.columns and summary_df['condition'].nunique() > 1:
-        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-        ax = axes[0]
-        for cond, cond_df in summary_df.groupby('condition'):
-            grouped = cond_df.groupby('context_size')['final_surprisal'].mean()
-            ax.plot(grouped.index, grouped.values, 'o-', label=cond,
-                    markersize=4)
-        ax.set_xlabel('Context words revealed', fontsize=12)
-        ax.set_ylabel('Mean final surprisal', fontsize=12)
-        ax.set_title('Context effect by condition', fontsize=13)
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-
-        ax = axes[1]
-        for cond, cond_df in summary_df.groupby('condition'):
-            grouped = cond_df.groupby('context_size')['final_correct'].mean()
-            ax.plot(grouped.index, grouped.values, 'o-', label=cond,
-                    markersize=4)
-        ax.set_xlabel('Context words revealed', fontsize=12)
-        ax.set_ylabel('Accuracy', fontsize=12)
-        ax.set_title('Accuracy by condition', fontsize=13)
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-
-        plt.tight_layout()
-        cond_path = f'{output_dir}/exp3_by_condition.png'
-        plt.savefig(cond_path, dpi=150, bbox_inches='tight')
-        print(f"  Saved plot: {cond_path}")
-        plt.close()
-
-    # Ambiguous vs unambiguous: the critical psycholinguistic test
-    has_ambig = ('ambiguous' in summary_df.columns and
-                 summary_df['ambiguous'].notna().any())
+    # --- Figure 1: All / Ambiguous / Unambiguous heatmaps ---
+    slices = [('All sentences', detail_df)]
     if has_ambig:
-        amb_labels = {0: 'Unambiguous', 1: 'Ambiguous'}
-        colors = {0: '#2196F3', 1: '#F44336'}
+        slices.append(('Ambiguous', detail_df[detail_df['ambiguous'] == 1]))
+        slices.append(('Unambiguous', detail_df[detail_df['ambiguous'] == 0]))
 
-        fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    heatmaps = []
+    for label, sub in slices:
+        hm, ct, ctx, ts = _build_context_heatmap(sub)
+        heatmaps.append((label, hm, ct, ctx, ts))
 
-        # Surprisal
-        ax = axes[0]
-        for amb_val in sorted(summary_df['ambiguous'].dropna().unique()):
-            sub = summary_df[summary_df['ambiguous'] == amb_val]
-            grouped = sub.groupby('context_fraction')['final_surprisal'].agg(
-                ['mean', 'sem'])
-            label = amb_labels.get(int(amb_val), str(amb_val))
-            ax.errorbar(grouped.index, grouped['mean'],
-                        yerr=grouped['sem'], fmt='o-',
-                        label=label, color=colors.get(int(amb_val)),
-                        capsize=3, markersize=4)
-        ax.set_xlabel('Context fraction (0=none, 1=full)', fontsize=12)
-        ax.set_ylabel('Final surprisal of target (nats)', fontsize=12)
-        ax.set_title('Garden path: context resolves ambiguity?', fontsize=13)
-        ax.legend(fontsize=11)
-        ax.grid(True, alpha=0.3)
+    _render_context_heatmap_grid(
+        heatmaps, f'{output_dir}/exp3_context_expansion.png')
 
-        # Accuracy
-        ax = axes[1]
-        for amb_val in sorted(summary_df['ambiguous'].dropna().unique()):
-            sub = summary_df[summary_df['ambiguous'] == amb_val]
-            grouped = sub.groupby('context_fraction')['final_correct'].mean()
-            label = amb_labels.get(int(amb_val), str(amb_val))
-            ax.plot(grouped.index, grouped.values, 'o-',
-                    label=label, color=colors.get(int(amb_val)),
-                    markersize=4)
-        ax.set_xlabel('Context fraction', fontsize=12)
-        ax.set_ylabel('P(target correctly denoised)', fontsize=12)
-        ax.set_title('Denoising accuracy', fontsize=13)
-        ax.set_ylim(-0.05, 1.05)
-        ax.legend(fontsize=11)
-        ax.grid(True, alpha=0.3)
+    # Print contribution counts
+    for label, hm, ct, ctx, ts in heatmaps:
+        if ct is None:
+            continue
+        print(f"\n  Sentence contributions ({label}):")
+        for i, cs in enumerate(ctx):
+            min_ct = ct[i].min()
+            max_ct = ct[i].max()
+            print(f"    ctx_size={cs}: {min_ct}–{max_ct} sentences")
 
-        # By base condition × ambiguity
-        ax = axes[2]
-        base_conds = sorted(summary_df['base_condition'].unique()) if 'base_condition' in summary_df.columns else []
-        styles = {'NPS': 'o-', 'NPZ': 's--', 'MVRR': '^:'}
+    # --- Figure 2: By condition heatmaps ---
+    if has_base:
+        base_conds = sorted(detail_df['base_condition'].unique())
+        cond_heatmaps = []
         for bc in base_conds:
-            for amb_val in sorted(summary_df['ambiguous'].dropna().unique()):
-                sub = summary_df[(summary_df['base_condition'] == bc) &
-                                 (summary_df['ambiguous'] == amb_val)]
-                if len(sub) == 0:
-                    continue
-                grouped = sub.groupby(
-                    'context_fraction')['final_surprisal'].mean()
-                style = styles.get(bc, 'o-')
-                label = f'{bc} {"Amb" if int(amb_val) else "Unamb"}'
-                alpha = 1.0 if int(amb_val) else 0.5
-                ax.plot(grouped.index, grouped.values, style,
-                        label=label, markersize=3, alpha=alpha)
-        ax.set_xlabel('Context fraction', fontsize=12)
-        ax.set_ylabel('Final surprisal', fontsize=12)
-        ax.set_title('Condition × Ambiguity', fontsize=13)
-        ax.legend(fontsize=7, ncol=2)
-        ax.grid(True, alpha=0.3)
+            sub = detail_df[detail_df['base_condition'] == bc]
+            hm, ct, ctx, ts = _build_context_heatmap(sub)
+            cond_heatmaps.append((bc, hm, ct, ctx, ts))
 
-        plt.tight_layout()
-        amb_path = f'{output_dir}/exp3_ambiguity_effect.png'
-        plt.savefig(amb_path, dpi=150, bbox_inches='tight')
-        print(f"  Saved plot: {amb_path}")
-        plt.close()
+        _render_context_heatmap_grid(
+            cond_heatmaps, f'{output_dir}/exp3_by_condition.png')
 
 
 def plot_spillover_exp3(summary_df, output_dir, max_spillover=3):

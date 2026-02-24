@@ -73,7 +73,7 @@ def run_cross_position_tracking(model, stimuli, num_steps=256, save_every=4,
                            if target_pos + off < seq_len]
         sp_tracking = {off: [] for off in valid_sp_offsets}
 
-        x = model.graph.sample_limit(batch_size, 1024).to(model.device)
+        x = model.graph.sample_limit(batch_size, seq_len).to(model.device)
 
         def project(x):
             """Fix all positions before target_pos to ground truth."""
@@ -293,59 +293,48 @@ def _build_relative_heatmap(subset_df, max_distance=5):
     return avg_heatmap, counts, timesteps_sorted
 
 
-def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
+def _render_heatmap_grid(slices_with_data, y_labels, output_path,
+                         max_distance=5, ncols=None):
     """
-    Create three averaged heatmaps:
-    1. All sentences
-    2. Ambiguous sentences only
-    3. Unambiguous sentences only
+    Render a grid of heatmaps from pre-built data.
 
-    Y-axis: relative position (n-1 to n-5).
-    X-axis: timestep (noise → clean).
-    Cell color: mean P(target token).
+    slices_with_data: list of (label, heatmap, counts, timesteps)
     """
-    has_ambig = ('ambiguous' in detail_df.columns and
-                 detail_df['ambiguous'].notna().any())
+    n = len(slices_with_data)
+    if n == 0:
+        return
+    if ncols is None:
+        ncols = min(n, 3)
+    nrows = (n + ncols - 1) // ncols
 
-    slices = [('All sentences', detail_df)]
-    if has_ambig:
-        slices.append(('Ambiguous', detail_df[detail_df['ambiguous'] == 1]))
-        slices.append(('Unambiguous', detail_df[detail_df['ambiguous'] == 0]))
+    fig, axes = plt.subplots(nrows, ncols,
+                             figsize=(6 * ncols, 5 * nrows),
+                             squeeze=False)
 
-    n_panels = len(slices)
-    fig, axes = plt.subplots(1, n_panels, figsize=(6 * n_panels, 5))
-    if n_panels == 1:
-        axes = [axes]
-
-    vmin_global, vmax_global = None, None
-    heatmaps_data = []
-
-    for label, sub_df in slices:
-        hm, ct, ts = _build_relative_heatmap(sub_df, max_distance)
-        heatmaps_data.append((label, hm, ct, ts))
+    # Global vmax with vmin fixed at 0
+    vmax_global = 0
+    for _, hm, _, _ in slices_with_data:
         if hm is not None:
-            if vmin_global is None:
-                vmin_global = hm.min()
-                vmax_global = hm.max()
-            else:
-                vmin_global = min(vmin_global, hm.min())
-                vmax_global = max(vmax_global, hm.max())
+            vmax_global = max(vmax_global, hm.max())
+    if vmax_global == 0:
+        vmax_global = 1e-6
 
-    y_labels = [f'n−{d}' for d in range(1, max_distance + 1)]
+    for idx, (label, hm, ct, ts) in enumerate(slices_with_data):
+        r, c = divmod(idx, ncols)
+        ax = axes[r][c]
 
-    for ax, (label, hm, ct, ts) in zip(axes, heatmaps_data):
         if hm is None:
             ax.set_title(f'{label}\n(no data)')
+            ax.axis('off')
             continue
 
         im = ax.imshow(hm, aspect='auto', cmap='YlOrRd',
                         interpolation='nearest',
-                        vmin=vmin_global, vmax=vmax_global)
+                        vmin=0, vmax=vmax_global)
 
         ax.set_yticks(range(max_distance))
         ax.set_yticklabels(y_labels, fontsize=10)
 
-        # Show ~8 evenly spaced timestep ticks
         n_ts = len(ts)
         tick_step = max(1, n_ts // 8)
         x_tick_idx = list(range(0, n_ts, tick_step))
@@ -355,28 +344,69 @@ def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
         ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
         ax.set_ylabel('Relative context position', fontsize=10)
 
-        # Annotate with sentence counts
         total_sents = ct.max() if ct.max() > 0 else 0
         min_sents = ct[ct > 0].min() if (ct > 0).any() else 0
         ax.set_title(f'{label}\n(N={total_sents}, min contrib={min_sents})',
                       fontsize=11)
-
         plt.colorbar(im, ax=ax, shrink=0.8, label='Mean P(target)')
 
+    # Hide unused axes
+    for idx in range(n, nrows * ncols):
+        r, c = divmod(idx, ncols)
+        axes[r][c].axis('off')
+
     plt.tight_layout()
-    hm_path = f'{output_dir}/exp2_heatmaps.png'
-    plt.savefig(hm_path, dpi=150, bbox_inches='tight')
-    print(f"  Saved plot: {hm_path}")
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f"  Saved plot: {output_path}")
     plt.close()
 
-    # Print count table for transparency
-    for label, hm, ct, ts in heatmaps_data:
+
+def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
+    """
+    Create averaged heatmaps with two figures:
+    1. exp2_heatmaps.png: All | Ambiguous | Unambiguous
+    2. exp2_heatmaps_by_condition.png: one panel per base condition
+    """
+    has_ambig = ('ambiguous' in detail_df.columns and
+                 detail_df['ambiguous'].notna().any())
+    has_base = 'base_condition' in detail_df.columns
+
+    y_labels = [f'n−{d}' for d in range(1, max_distance + 1)]
+
+    # --- Figure 1: All / Ambiguous / Unambiguous ---
+    slices = [('All sentences', detail_df)]
+    if has_ambig:
+        slices.append(('Ambiguous', detail_df[detail_df['ambiguous'] == 1]))
+        slices.append(('Unambiguous', detail_df[detail_df['ambiguous'] == 0]))
+
+    heatmaps = [(label, *_build_relative_heatmap(sub, max_distance))
+                for label, sub in slices]
+
+    _render_heatmap_grid(heatmaps, y_labels,
+                         f'{output_dir}/exp2_heatmaps.png',
+                         max_distance=max_distance)
+
+    # Print count table
+    for label, hm, ct, ts in heatmaps:
         if ct is None:
             continue
         print(f"\n  Sentence contributions per cell ({label}):")
         for d in range(max_distance):
             unique_counts = np.unique(ct[d])
             print(f"    n−{d+1}: {unique_counts}")
+
+    # --- Figure 2: By condition ---
+    if has_base:
+        base_conds = sorted(detail_df['base_condition'].unique())
+        cond_heatmaps = []
+        for bc in base_conds:
+            sub = detail_df[detail_df['base_condition'] == bc]
+            hm, ct, ts = _build_relative_heatmap(sub, max_distance)
+            cond_heatmaps.append((bc, hm, ct, ts))
+
+        _render_heatmap_grid(cond_heatmaps, y_labels,
+                             f'{output_dir}/exp2_heatmaps_by_condition.png',
+                             max_distance=max_distance)
 
 
 def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
