@@ -266,10 +266,14 @@ def _append_gpt2_col(pivot, gpt2_df, metric_col, row_col):
     """Append a GPT-2 column (keyed by row_col) to a pivot table."""
     if gpt2_df is None or len(gpt2_df) == 0:
         return pivot, False
-    gpt2_avg = gpt2_df.groupby(row_col)[metric_col].mean()
-    gpt2_vec = gpt2_avg.reindex(pivot.index, fill_value=np.nan)
+    if metric_col not in gpt2_df.columns:
+        return pivot, False
     pivot = pivot.copy()
-    pivot['GPT-2'] = gpt2_vec
+    if row_col in gpt2_df.columns:
+        gpt2_avg = gpt2_df.groupby(row_col)[metric_col].mean()
+        pivot['GPT-2'] = gpt2_avg.reindex(pivot.index, fill_value=np.nan)
+    else:
+        pivot['GPT-2'] = gpt2_df[metric_col].mean()
     return pivot, True
 
 
