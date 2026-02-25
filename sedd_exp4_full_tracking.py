@@ -38,7 +38,7 @@ from model import utils as mutils
 # ---------------------------------------------------------------------------
 #  Soft projection
 # ---------------------------------------------------------------------------
-
+# hard coded function words
 FUNCTION_WORDS = frozenset({
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall',
