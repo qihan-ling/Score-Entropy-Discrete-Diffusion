@@ -1,22 +1,26 @@
 """
-Experiment 4: Full Position Tracking
+Experiment 4: Full Position Tracking with Soft Projection
 
-Tracks two measures across the full denoising trajectory for every
-token position from position 1 to n+3 (where n = target position):
+Unlike exp1-3 which evaluate clean tokens at varying sigma, exp4 runs
+the actual diffusion process with SOFT left-to-right projection. This
+means previous words retain some uncertainty and can keep updating as
+later words are denoised — closely modeling human incremental processing
+where the role of earlier words is not fully resolved until disambiguating
+information arrives.
 
-(1) Surprisal of the target word (bits): how much each position's logits
-    predict the disambiguating target token.
-(2) Entropy of next-token prediction (bits): overall uncertainty of the
-    model's prediction at each position.
+Tracks two measures across the denoising trajectory for every token
+position from 1 to n+3 (n = target position):
 
-Both measures are recorded at each denoising step (varying sigma) using
-clean tokens (no actual diffusion noise), plus a GPT-2 baseline column.
+(1) Surprisal of the target word (bits)
+(2) Entropy of next-token prediction (bits)
 
+Includes GPT-2 baseline for comparison.
 Output goes to 'full_tracking_outputs/'.
 """
 
 import argparse
 import torch
+import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -27,22 +31,130 @@ from sedd_experiment_utils import (
     compute_surprisal_bits, compute_entropy_bits,
     compute_gpt2_baseline, create_output_dir,
 )
+from sampling import get_predictor, Denoiser
+from model import utils as mutils
 
 
-def run_full_tracking(model, stimuli, num_steps=256, save_every=4):
+# ---------------------------------------------------------------------------
+#  Soft projection
+# ---------------------------------------------------------------------------
+
+FUNCTION_WORDS = frozenset({
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall',
+    'should', 'may', 'might', 'can', 'could', 'must',
+    'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as',
+    'into', 'through', 'during', 'before', 'after', 'above', 'below',
+    'between', 'out', 'off', 'over', 'under', 'again', 'further',
+    'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how',
+    'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other',
+    'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
+    'than', 'too', 'very', 'just', 'because', 'but', 'and', 'or',
+    'if', 'while', 'although', 'though', 'that', 'which', 'who',
+    'whom', 'this', 'these', 'those', 'it', 'its',
+    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves',
+    'you', 'your', 'yours', 'yourself', 'yourselves',
+    'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself',
+    'they', 'them', 'their', 'theirs', 'themselves',
+    'what', 'about', 'up',
+})
+
+
+def compute_noise_level(distance, noise_schedule, base_noise):
     """
-    Sweep sigma values and record target surprisal and entropy at every
-    position from 0 to target_pos + 3 (capped at sentence length).
+    Compute the probability of replacing a prior position with noise.
 
-    Returns DataFrame with columns:
-        ...stimulus info..., position, word, step, timestep,
-        target_surprisal_bits, entropy_bits
+    Args:
+        distance: how far before the current processing frontier
+                  (1 = immediately before, 2 = two back, ...)
+        noise_schedule: scheduling strategy
+        base_noise: per-unit-distance noise increment (for 'recency')
+                    or peak noise (for legacy schedules)
+
+    Returns:
+        Probability of replacing with noise.
+        For 'recency': noise INCREASES with distance (farther = noisier),
+        matching human recency: recently-read words are clearest.
+    """
+    if noise_schedule == 'recency':
+        # noise = base_noise * d, capped at 0.95
+        # e.g. base_noise=0.05 → d=1: 5%, d=2: 10%, d=3: 15%, ...
+        return min(0.95, base_noise * distance)
+    elif noise_schedule == 'exponential':
+        return base_noise * np.exp(-distance / 2)
+    elif noise_schedule == 'linear':
+        return max(0, base_noise * (1 - distance / 10))
+    elif noise_schedule == 'step':
+        if distance <= 2:
+            return base_noise
+        elif distance <= 5:
+            return base_noise * 0.3
+        else:
+            return 0.01
+    elif noise_schedule == 'none':
+        return 0.0
+    else:
+        raise ValueError(f"Unknown noise schedule: {noise_schedule}")
+
+
+def soft_project(x, tokens, target_pos, graph,
+                 noise_schedule, base_noise,
+                 tokenizer=None, content_bonus=1.0):
+    """
+    Apply soft projection to all positions before the target.
+
+    Nearby words (small distance) retain more information; farther words
+    are noisier — mirroring human recency in working memory.
+
+    When content_bonus < 1.0 and a tokenizer is provided, low-frequency
+    content words receive reduced noise (multiplied by content_bonus),
+    reflecting the observation that content words leave a stronger trace
+    than function words at equivalent distances.
+    """
+    for pos in range(target_pos):
+        distance = target_pos - pos
+        noise_level = compute_noise_level(
+            distance, noise_schedule, base_noise)
+
+        if tokenizer is not None and content_bonus < 1.0:
+            word = tokenizer.decode([tokens[0, pos].item()]).strip().lower()
+            if word not in FUNCTION_WORDS:
+                noise_level *= content_bonus
+
+        if noise_level > 0 and torch.rand(1).item() < noise_level:
+            x[0, pos] = graph.sample_limit(1, 1).to(x.device).squeeze()
+        else:
+            x[0, pos] = tokens[0, pos]
+    return x
+
+
+# ---------------------------------------------------------------------------
+#  Data collection
+# ---------------------------------------------------------------------------
+
+def run_full_tracking(model, stimuli, num_steps=256, save_every=4,
+                      noise_schedule='recency', base_noise=0.05,
+                      content_bonus=1.0):
+    """
+    Run actual diffusion with soft projection and record target surprisal
+    and entropy at every position from 0 to target_pos + 3.
+
+    Unlike exp1-3, the model sees the real noisy state (not clean tokens),
+    so predictions reflect the evolving, uncertain representation.
     """
     rows = []
+
+    predictor = get_predictor('analytic')(model.graph, model.noise)
+    denoiser = Denoiser(model.graph, model.noise)
+    score_fn = mutils.get_score_fn(model.model, train=False, sampling=True)
+
     eps = 1e-5
     timesteps = torch.linspace(1, eps, num_steps + 1, device=model.device)
+    dt = (1 - eps) / num_steps
 
-    for stim in tqdm(stimuli, desc="SEDD tracking"):
+    tokenizer = model.tokenizer
+
+    for stim in tqdm(stimuli, desc="SEDD soft-projection tracking"):
         tokens = model.tokenize(stim['sentence'])
         seq_len = tokens.shape[1]
         target_token_id = stim['target_token_id']
@@ -60,35 +172,75 @@ def run_full_tracking(model, stimuli, num_steps=256, save_every=4):
             'ambiguous': stim.get('ambiguous'),
         }
 
+        x = model.graph.sample_limit(1, seq_len).to(model.device)
+
         with torch.no_grad():
-            for i in range(0, num_steps + 1, save_every):
+            for i in range(num_steps):
                 t = timesteps[i] * torch.ones(
                     1, 1, device=model.device)
-                sigma = model.noise(t)[0]
+                curr_sigma = model.noise(t)[0]
 
-                logits = model.forward_no_diagonal_masking(tokens, sigma)
-                probs = model.logits_to_probs(logits)
-                t_val = t[0, 0].item()
+                x = soft_project(x, tokens, target_pos, model.graph,
+                                 noise_schedule, base_noise,
+                                 tokenizer, content_bonus)
 
-                for p in range(max_pos + 1):
-                    target_prob = model.get_target_prob(
-                        probs, target_token_id, p)
-                    target_surp = (compute_surprisal_bits(target_prob)
-                                   if target_prob else None)
+                if i % save_every == 0:
+                    logits = model.forward_no_diagonal_masking(
+                        x, curr_sigma)
+                    probs = model.logits_to_probs(logits)
+                    t_val = t[0, 0].item()
 
-                    entropy = compute_entropy_bits(probs[0, p])
-                    word = model.tokenizer.decode(
-                        [tokens[0, p].item()])
+                    for p in range(max_pos + 1):
+                        target_prob = model.get_target_prob(
+                            probs, target_token_id, p)
+                        target_surp = (compute_surprisal_bits(target_prob)
+                                       if target_prob else None)
+                        entropy = compute_entropy_bits(probs[0, p])
+                        word = tokenizer.decode(
+                            [tokens[0, p].item()])
 
-                    rows.append({
-                        **base_info,
-                        'position': p,
-                        'word': word,
-                        'step': i,
-                        'timestep': t_val,
-                        'target_surprisal_bits': target_surp,
-                        'entropy_bits': entropy,
-                    })
+                        rows.append({
+                            **base_info,
+                            'position': p,
+                            'word': word,
+                            'step': i,
+                            'timestep': t_val,
+                            'target_surprisal_bits': target_surp,
+                            'entropy_bits': entropy,
+                        })
+
+                x = predictor.update_fn(score_fn, x, t, dt)
+
+            # Final denoising step
+            x = soft_project(x, tokens, target_pos, model.graph,
+                             noise_schedule, base_noise,
+                             tokenizer, content_bonus)
+            t = timesteps[-1] * torch.ones(
+                1, 1, device=model.device)
+            x = denoiser.update_fn(score_fn, x, t)
+
+            final_sigma = model.noise(t)[0]
+            logits = model.forward_no_diagonal_masking(x, final_sigma)
+            probs = model.logits_to_probs(logits)
+
+            for p in range(max_pos + 1):
+                target_prob = model.get_target_prob(
+                    probs, target_token_id, p)
+                target_surp = (compute_surprisal_bits(target_prob)
+                               if target_prob else None)
+                entropy = compute_entropy_bits(probs[0, p])
+                word = tokenizer.decode(
+                    [tokens[0, p].item()])
+
+                rows.append({
+                    **base_info,
+                    'position': p,
+                    'word': word,
+                    'step': num_steps,
+                    'timestep': eps,
+                    'target_surprisal_bits': target_surp,
+                    'entropy_bits': entropy,
+                })
 
     return pd.DataFrame(rows)
 
@@ -306,7 +458,7 @@ def plot_full_tracking(sedd_df, gpt2_df, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Exp 4: Full position tracking with GPT-2 comparison')
+        description='Exp 4: Full tracking with soft projection + GPT-2')
     parser.add_argument('--input', type=str,
                         default='SAP_stimuli copy/sap_items_ClassicGP.csv',
                         help='Input CSV')
@@ -317,9 +469,21 @@ def main():
     parser.add_argument('--gpt2-device', type=str, default='cpu',
                         help='Device for GPT-2 model')
     parser.add_argument('--num-steps', type=int, default=256,
-                        help='Number of denoising steps to sweep')
+                        help='Number of denoising steps')
     parser.add_argument('--save-every', type=int, default=4,
                         help='Record every N steps')
+    parser.add_argument('--noise-schedule', type=str, default='recency',
+                        choices=['recency', 'exponential', 'linear', 'step', 'none'],
+                        help='Soft projection noise schedule '
+                             '(recency = noise increases with distance, '
+                             'matching human working-memory decay)')
+    parser.add_argument('--base-noise', type=float, default=0.05,
+                        help='Per-unit-distance noise rate for recency schedule '
+                             '(0.05 → d=1: 5%%, d=2: 10%%, d=3: 15%%, ...)')
+    parser.add_argument('--content-bonus', type=float, default=0.5,
+                        help='Noise multiplier for content words (< 1.0 means '
+                             'content words are retained more than function words; '
+                             '1.0 disables the bonus)')
     parser.add_argument('--no-gpt2', action='store_true',
                         help='Skip GPT-2 baseline')
     args = parser.parse_args()
@@ -327,10 +491,13 @@ def main():
     output_dir = create_output_dir(args.output_dir)
 
     print("=" * 60)
-    print(" Experiment 4: Full Position Tracking")
+    print(" Experiment 4: Full Tracking (Soft Projection)")
     print("=" * 60)
-    print(f"  Input: {args.input}")
-    print(f"  Steps: {args.num_steps}, save every {args.save_every}")
+    print(f"  Input:          {args.input}")
+    print(f"  Steps:          {args.num_steps}, save every {args.save_every}")
+    print(f"  Noise schedule: {args.noise_schedule}")
+    print(f"  Base noise:     {args.base_noise}")
+    print(f"  Content bonus:  {args.content_bonus}")
 
     print("\nLoading SEDD model...")
     model = SEDDModelWrapper(device=args.device)
@@ -349,11 +516,16 @@ def main():
     print(f"\n  Example: {ex['sentence']}")
     print(f"    Target: '{ex['target_word']}' at pos {ex['target_token_pos']}")
 
-    print("\nRunning SEDD full tracking...")
+    print("\nRunning SEDD soft-projection tracking...")
     sedd_df = run_full_tracking(
-        model, stimuli, args.num_steps, args.save_every)
+        model, stimuli, args.num_steps, args.save_every,
+        noise_schedule=args.noise_schedule,
+        base_noise=args.base_noise,
+        content_bonus=args.content_bonus,
+    )
 
-    sedd_path = f'{output_dir}/exp4_full_tracking_{loader.name}.csv'
+    tag = f'{args.noise_schedule}_bn{args.base_noise}_cb{args.content_bonus}'
+    sedd_path = f'{output_dir}/exp4_full_tracking_{loader.name}_{tag}.csv'
     sedd_df.to_csv(sedd_path, index=False)
     print(f"  Saved: {sedd_path} ({len(sedd_df)} rows)")
 
