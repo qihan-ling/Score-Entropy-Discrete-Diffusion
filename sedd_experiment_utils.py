@@ -265,10 +265,117 @@ class StimulusLoader:
         return None
 
 
+NATS_TO_BITS = 1.0 / np.log(2)
+
+
 def compute_surprisal(prob):
-    """Compute surprisal from probability, with floor for numerical safety."""
+    """Compute surprisal in nats from probability."""
     prob = max(prob, 1e-10)
     return -np.log(prob)
+
+
+def compute_surprisal_bits(prob):
+    """Compute surprisal in bits from probability."""
+    prob = max(prob, 1e-10)
+    return -np.log2(prob)
+
+
+def compute_entropy_bits(probs_tensor):
+    """Compute Shannon entropy in bits from a probability distribution tensor."""
+    log2_p = torch.log2(probs_tensor + 1e-10)
+    return -(probs_tensor * log2_p).sum().item()
+
+
+class GPT2ModelWrapper:
+    """Wraps GPT-2 for baseline comparison with SEDD experiments."""
+
+    def __init__(self, model_name='gpt2', device='cpu'):
+        from transformers import GPT2LMHeadModel
+        self.device = torch.device(device)
+        try:
+            self.model = GPT2LMHeadModel.from_pretrained(
+                model_name).to(self.device)
+        except RuntimeError:
+            self.device = torch.device('cpu')
+            self.model = GPT2LMHeadModel.from_pretrained(
+                model_name).to(self.device)
+        self.model.eval()
+        self.tokenizer = GPT2TokenizerFast.from_pretrained('gpt2')
+
+    def compute_all_positions(self, tokens, target_token_id, max_pos=None):
+        """
+        Compute surprisal of target token and entropy at each position.
+
+        Args:
+            tokens: tensor [1, seq_len] on any device (moved internally)
+            target_token_id: int token id of the target word
+            max_pos: maximum position index to compute (inclusive)
+
+        Returns:
+            list of dicts with 'position', 'target_surprisal_bits',
+            'entropy_bits' keys.
+        """
+        tokens_dev = tokens.to(self.device)
+        seq_len = tokens_dev.shape[1]
+        if max_pos is None:
+            max_pos = seq_len - 1
+
+        with torch.no_grad():
+            logits = self.model(tokens_dev).logits
+            probs = F.softmax(logits, dim=-1)
+
+        results = []
+        for p in range(min(max_pos + 1, seq_len)):
+            p_dist = probs[0, p]
+            entropy = compute_entropy_bits(p_dist)
+
+            if target_token_id < probs.shape[-1]:
+                tp = probs[0, p, target_token_id].item()
+                surp = compute_surprisal_bits(tp)
+            else:
+                surp = None
+
+            results.append({
+                'position': p,
+                'target_surprisal_bits': surp,
+                'entropy_bits': entropy,
+            })
+        return results
+
+
+def compute_gpt2_baseline(stimuli, gpt2, max_spillover=3):
+    """
+    Compute GPT-2 surprisal and entropy for a set of stimuli.
+
+    Returns a DataFrame with one row per (stimulus, position) containing
+    target_surprisal_bits and entropy_bits.
+    """
+    from tqdm import tqdm
+    rows = []
+    for stim in tqdm(stimuli, desc="GPT-2 baseline"):
+        tokens = gpt2.tokenizer.encode(
+            stim['sentence'], return_tensors='pt')
+        target_pos = stim['target_token_pos']
+        max_pos = min(target_pos + max_spillover,
+                      tokens.shape[1] - 1)
+
+        metrics = gpt2.compute_all_positions(
+            tokens, stim['target_token_id'], max_pos)
+
+        for m in metrics:
+            rows.append({
+                'item': stim['item'],
+                'condition': stim['condition'],
+                'base_condition': stim.get('base_condition',
+                                           stim['condition']),
+                'ambiguous': stim.get('ambiguous'),
+                'target_token_pos': target_pos,
+                'position': m['position'],
+                'distance_to_target': target_pos - m['position'],
+                'target_surprisal_bits': m['target_surprisal_bits'],
+                'entropy_bits': m['entropy_bits'],
+            })
+    return pd.DataFrame(rows)
 
 
 def create_output_dir(base_dir="outputs"):

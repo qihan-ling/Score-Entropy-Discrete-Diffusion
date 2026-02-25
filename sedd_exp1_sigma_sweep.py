@@ -25,7 +25,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from sedd_experiment_utils import (
-    SEDDModelWrapper, StimulusLoader, compute_surprisal, create_output_dir
+    SEDDModelWrapper, StimulusLoader, compute_surprisal, create_output_dir,
+    GPT2ModelWrapper, compute_gpt2_baseline, NATS_TO_BITS
 )
 
 
@@ -116,7 +117,7 @@ def run_sigma_sweep(model, stimuli, sigmas=None):
     return pd.DataFrame(results)
 
 
-def plot_sigma_sweep(df, output_dir):
+def plot_sigma_sweep(df, output_dir, gpt2_df=None):
     """Create visualizations testing two hypotheses about denoising."""
     has_ambig = 'ambiguous' in df.columns and df['ambiguous'].notna().any()
     has_base = 'base_condition' in df.columns
@@ -130,11 +131,13 @@ def plot_sigma_sweep(df, output_dir):
     # H1: Entropy vs sigma
     ax = axes[0]
     grouped = df.groupby('sigma')['entropy'].agg(['mean', 'sem'])
+    grouped['mean'] = grouped['mean'] * NATS_TO_BITS
+    grouped['sem'] = grouped['sem'] * NATS_TO_BITS
     ax.errorbar(grouped.index, grouped['mean'], yerr=grouped['sem'],
                 fmt='o-', capsize=3, markersize=4, color='#4CAF50')
     ax.set_xscale('log')
     ax.set_xlabel('Sigma (noise level)', fontsize=12)
-    ax.set_ylabel('Distribution Entropy (nats)', fontsize=12)
+    ax.set_ylabel('Distribution Entropy (bits)', fontsize=12)
     ax.set_title('H1: Does denoising reduce uncertainty?', fontsize=13)
     ax.invert_xaxis()
     ax.grid(True, alpha=0.3)
@@ -151,6 +154,14 @@ def plot_sigma_sweep(df, output_dir):
     ax.invert_xaxis()
     ax.grid(True, alpha=0.3)
 
+    if gpt2_df is not None and len(gpt2_df) > 0:
+        gpt2_entropy = gpt2_df['entropy_bits'].mean()
+        axes[0].axhline(gpt2_entropy, color='gray', linestyle=':', linewidth=2, label='GPT-2')
+        axes[0].legend()
+        gpt2_prob = gpt2_df['target_prob'].mean()
+        axes[1].axhline(gpt2_prob, color='gray', linestyle=':', linewidth=2, label='GPT-2')
+        axes[1].legend()
+
     plt.tight_layout()
     path = f'{output_dir}/exp1_sigma_sweep.png'
     plt.savefig(path, dpi=150, bbox_inches='tight')
@@ -162,7 +173,7 @@ def plot_sigma_sweep(df, output_dir):
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
         for ax, metric, ylabel, title in [
-            (axes[0], 'entropy', 'Distribution Entropy (nats)',
+            (axes[0], 'entropy', 'Distribution Entropy (bits)',
              'H1: Entropy — Amb vs Unamb'),
             (axes[1], 'target_prob', 'P(target token)',
              'H2: P(target) — Amb vs Unamb'),
@@ -170,6 +181,9 @@ def plot_sigma_sweep(df, output_dir):
             for amb_val in sorted(df['ambiguous'].dropna().unique()):
                 sub = df[df['ambiguous'] == amb_val]
                 grouped = sub.groupby('sigma')[metric].agg(['mean', 'sem'])
+                if metric == 'entropy':
+                    grouped['mean'] = grouped['mean'] * NATS_TO_BITS
+                    grouped['sem'] = grouped['sem'] * NATS_TO_BITS
                 label = amb_labels.get(int(amb_val), str(amb_val))
                 color = amb_colors.get(int(amb_val))
                 ax.plot(grouped.index, grouped['mean'], 'o-',
@@ -178,6 +192,21 @@ def plot_sigma_sweep(df, output_dir):
                                 grouped['mean'] - grouped['sem'],
                                 grouped['mean'] + grouped['sem'],
                                 alpha=0.15, color=color)
+
+            if gpt2_df is not None and len(gpt2_df) > 0:
+                gpt2_has_ambig = 'ambiguous' in gpt2_df.columns and gpt2_df['ambiguous'].notna().any()
+                if gpt2_has_ambig:
+                    for amb_val in sorted(gpt2_df['ambiguous'].dropna().unique()):
+                        gpt2_sub = gpt2_df[gpt2_df['ambiguous'] == amb_val]
+                        g_label = amb_labels.get(int(amb_val), str(amb_val))
+                        g_color = amb_colors.get(int(amb_val))
+                        if metric == 'entropy':
+                            g_val = gpt2_sub['entropy_bits'].mean()
+                        else:
+                            g_val = gpt2_sub['target_prob'].mean()
+                        ax.axhline(g_val, color=g_color, linestyle=':', linewidth=1.5,
+                                   label=f'GPT-2 {g_label}')
+
             ax.set_xscale('log')
             ax.set_xlabel('Sigma (noise level)', fontsize=12)
             ax.set_ylabel(ylabel, fontsize=12)
@@ -198,7 +227,7 @@ def plot_sigma_sweep(df, output_dir):
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
         for ax, metric, ylabel, title in [
-            (axes[0], 'entropy', 'Distribution Entropy (nats)',
+            (axes[0], 'entropy', 'Distribution Entropy (bits)',
              'H1: Entropy by condition'),
             (axes[1], 'target_prob', 'P(target token)',
              'H2: P(target) by condition'),
@@ -206,6 +235,9 @@ def plot_sigma_sweep(df, output_dir):
             for bc in base_conds:
                 sub = df[df['base_condition'] == bc]
                 grouped = sub.groupby('sigma')[metric].agg(['mean', 'sem'])
+                if metric == 'entropy':
+                    grouped['mean'] = grouped['mean'] * NATS_TO_BITS
+                    grouped['sem'] = grouped['sem'] * NATS_TO_BITS
                 color = cond_colors.get(bc)
                 ax.plot(grouped.index, grouped['mean'], 'o-',
                         label=bc, color=color, markersize=4)
@@ -213,6 +245,22 @@ def plot_sigma_sweep(df, output_dir):
                                 grouped['mean'] - grouped['sem'],
                                 grouped['mean'] + grouped['sem'],
                                 alpha=0.15, color=color)
+
+            if gpt2_df is not None and len(gpt2_df) > 0:
+                gpt2_has_base = 'base_condition' in gpt2_df.columns
+                if gpt2_has_base:
+                    for bc in base_conds:
+                        gpt2_sub = gpt2_df[gpt2_df['base_condition'] == bc]
+                        if len(gpt2_sub) == 0:
+                            continue
+                        g_color = cond_colors.get(bc)
+                        if metric == 'entropy':
+                            g_val = gpt2_sub['entropy_bits'].mean()
+                        else:
+                            g_val = gpt2_sub['target_prob'].mean()
+                        ax.axhline(g_val, color=g_color, linestyle=':', linewidth=1.5,
+                                   label=f'GPT-2 {bc}')
+
             ax.set_xscale('log')
             ax.set_xlabel('Sigma (noise level)', fontsize=12)
             ax.set_ylabel(ylabel, fontsize=12)
@@ -239,6 +287,10 @@ def main():
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--sigmas', type=float, nargs='+', default=None,
                         help='Custom sigma values to sweep')
+    parser.add_argument('--gpt2-device', type=str, default='cpu',
+                        help='Device for GPT-2 baseline (default: cpu)')
+    parser.add_argument('--no-gpt2', action='store_true',
+                        help='Skip GPT-2 baseline computation')
     args = parser.parse_args()
 
     output_dir = create_output_dir(args.output_dir)
@@ -291,8 +343,17 @@ def main():
     }).round(3)
     print(summary.to_string())
 
+    if not args.no_gpt2:
+        print("\nLoading GPT-2...")
+        gpt2 = GPT2ModelWrapper(device=args.gpt2_device)
+        gpt2_df = compute_gpt2_baseline(stimuli, gpt2)
+        gpt2_at_target = gpt2_df[gpt2_df['position'] == gpt2_df['target_token_pos'] - 1].copy()
+        gpt2_at_target['target_prob'] = 2 ** (-gpt2_at_target['target_surprisal_bits'])
+    else:
+        gpt2_at_target = None
+
     print("\nCreating plots...")
-    plot_sigma_sweep(df, output_dir)
+    plot_sigma_sweep(df, output_dir, gpt2_df=gpt2_at_target)
 
     print("\nDone.")
     return 0

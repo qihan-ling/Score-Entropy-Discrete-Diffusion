@@ -26,7 +26,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
 from sedd_experiment_utils import (
-    SEDDModelWrapper, StimulusLoader, compute_surprisal, create_output_dir
+    SEDDModelWrapper, StimulusLoader, compute_surprisal, create_output_dir,
+    GPT2ModelWrapper, compute_gpt2_baseline, NATS_TO_BITS
 )
 from sampling import get_predictor, Denoiser
 from model import utils as mutils
@@ -293,12 +294,40 @@ def _build_relative_heatmap(subset_df, max_distance=5):
     return avg_heatmap, counts, timesteps_sorted
 
 
+def _build_gpt2_column(gpt2_df, subset_filter=None, max_distance=5):
+    """
+    Build a GPT-2 P(target) column vector (one value per distance 1..max_distance).
+
+    Returns an array of shape (max_distance, 1) or None.
+    """
+    if gpt2_df is None or len(gpt2_df) == 0:
+        return None
+
+    sub = gpt2_df.copy()
+    if subset_filter is not None:
+        sub = subset_filter(sub)
+    sub = sub[sub['distance_to_target'].between(1, max_distance)]
+    if len(sub) == 0:
+        return None
+
+    sub = sub.copy()
+    sub['target_prob'] = 2.0 ** (-sub['target_surprisal_bits'])
+
+    col = np.zeros((max_distance, 1))
+    for d in range(1, max_distance + 1):
+        d_sub = sub[sub['distance_to_target'] == d]
+        if len(d_sub) > 0:
+            col[d - 1, 0] = d_sub['target_prob'].mean()
+    return col
+
+
 def _render_heatmap_grid(slices_with_data, y_labels, output_path,
                          max_distance=5, ncols=None):
     """
     Render a grid of heatmaps from pre-built data.
 
-    slices_with_data: list of (label, heatmap, counts, timesteps)
+    slices_with_data: list of (label, heatmap, counts, timesteps, gpt2_col)
+        gpt2_col: optional (max_distance, 1) array for a GPT-2 column
     """
     n = len(slices_with_data)
     if n == 0:
@@ -311,15 +340,20 @@ def _render_heatmap_grid(slices_with_data, y_labels, output_path,
                              figsize=(6 * ncols, 5 * nrows),
                              squeeze=False)
 
-    # Global vmax with vmin fixed at 0
     vmax_global = 0
-    for _, hm, _, _ in slices_with_data:
+    for entry in slices_with_data:
+        hm = entry[1]
         if hm is not None:
             vmax_global = max(vmax_global, hm.max())
+        gpt2_col = entry[4] if len(entry) > 4 else None
+        if gpt2_col is not None:
+            vmax_global = max(vmax_global, gpt2_col.max())
     if vmax_global == 0:
         vmax_global = 1e-6
 
-    for idx, (label, hm, ct, ts) in enumerate(slices_with_data):
+    for idx, entry in enumerate(slices_with_data):
+        label, hm, ct, ts = entry[0], entry[1], entry[2], entry[3]
+        gpt2_col = entry[4] if len(entry) > 4 else None
         r, c = divmod(idx, ncols)
         ax = axes[r][c]
 
@@ -328,19 +362,36 @@ def _render_heatmap_grid(slices_with_data, y_labels, output_path,
             ax.axis('off')
             continue
 
-        im = ax.imshow(hm, aspect='auto', cmap='YlOrRd',
+        if gpt2_col is not None:
+            gap = np.full((max_distance, 1), np.nan)
+            combined = np.hstack([hm, gap, gpt2_col])
+        else:
+            combined = hm
+
+        masked = np.ma.array(combined, mask=np.isnan(combined))
+        cmap = plt.cm.YlOrRd.copy()
+        cmap.set_bad(color='white')
+
+        im = ax.imshow(masked, aspect='auto', cmap=cmap,
                         interpolation='nearest',
                         vmin=0, vmax=vmax_global)
 
         ax.set_yticks(range(max_distance))
         ax.set_yticklabels(y_labels, fontsize=10)
 
+        n_cols_hm = hm.shape[1]
         n_ts = len(ts)
         tick_step = max(1, n_ts // 8)
         x_tick_idx = list(range(0, n_ts, tick_step))
+        x_labels_list = [f'{ts[i]:.2f}' for i in x_tick_idx]
+
+        if gpt2_col is not None:
+            gpt2_x = n_cols_hm + 1
+            x_tick_idx.append(gpt2_x)
+            x_labels_list.append('GPT-2')
+
         ax.set_xticks(x_tick_idx)
-        ax.set_xticklabels([f'{ts[i]:.2f}' for i in x_tick_idx],
-                            fontsize=7, rotation=45)
+        ax.set_xticklabels(x_labels_list, fontsize=7, rotation=45)
         ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
         ax.set_ylabel('Relative context position', fontsize=10)
 
@@ -350,7 +401,6 @@ def _render_heatmap_grid(slices_with_data, y_labels, output_path,
                       fontsize=11)
         plt.colorbar(im, ax=ax, shrink=0.8, label='Mean P(target)')
 
-    # Hide unused axes
     for idx in range(n, nrows * ncols):
         r, c = divmod(idx, ncols)
         axes[r][c].axis('off')
@@ -361,7 +411,8 @@ def _render_heatmap_grid(slices_with_data, y_labels, output_path,
     plt.close()
 
 
-def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
+def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5,
+                            gpt2_df=None):
     """
     Create averaged heatmaps with two figures:
     1. exp2_heatmaps.png: All | Ambiguous | Unambiguous
@@ -374,20 +425,25 @@ def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
     y_labels = [f'n−{d}' for d in range(1, max_distance + 1)]
 
     # --- Figure 1: All / Ambiguous / Unambiguous ---
-    slices = [('All sentences', detail_df)]
+    slice_specs = [('All sentences', None)]
     if has_ambig:
-        slices.append(('Ambiguous', detail_df[detail_df['ambiguous'] == 1]))
-        slices.append(('Unambiguous', detail_df[detail_df['ambiguous'] == 0]))
+        slice_specs.append(('Ambiguous', lambda df: df[df['ambiguous'] == 1]))
+        slice_specs.append(
+            ('Unambiguous', lambda df: df[df['ambiguous'] == 0]))
 
-    heatmaps = [(label, *_build_relative_heatmap(sub, max_distance))
-                for label, sub in slices]
+    heatmaps = []
+    for label, filt in slice_specs:
+        sub = filt(detail_df) if filt else detail_df
+        hm, ct, ts = _build_relative_heatmap(sub, max_distance)
+        gpt2_col = _build_gpt2_column(gpt2_df, filt, max_distance)
+        heatmaps.append((label, hm, ct, ts, gpt2_col))
 
     _render_heatmap_grid(heatmaps, y_labels,
                          f'{output_dir}/exp2_heatmaps.png',
                          max_distance=max_distance)
 
-    # Print count table
-    for label, hm, ct, ts in heatmaps:
+    for entry in heatmaps:
+        label, hm, ct, ts = entry[0], entry[1], entry[2], entry[3]
         if ct is None:
             continue
         print(f"\n  Sentence contributions per cell ({label}):")
@@ -402,14 +458,18 @@ def _plot_averaged_heatmaps(detail_df, output_dir, max_distance=5):
         for bc in base_conds:
             sub = detail_df[detail_df['base_condition'] == bc]
             hm, ct, ts = _build_relative_heatmap(sub, max_distance)
-            cond_heatmaps.append((bc, hm, ct, ts))
+            bc_filter = (lambda df, _bc=bc:
+                         df[df['base_condition'] == _bc])
+            gpt2_col = _build_gpt2_column(gpt2_df, bc_filter, max_distance)
+            cond_heatmaps.append((bc, hm, ct, ts, gpt2_col))
 
         _render_heatmap_grid(cond_heatmaps, y_labels,
                              f'{output_dir}/exp2_heatmaps_by_condition.png',
                              max_distance=max_distance)
 
 
-def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
+def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir,
+                        gpt2_df=None):
     """Create visualizations of cross-position tracking."""
 
     if len(detail_df) == 0:
@@ -429,14 +489,26 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
     final_data = final_data.sort_values('distance')
 
     ax.errorbar(final_data['distance'], final_data['prob_mean'],
-                yerr=final_data['prob_std'], fmt='o-', capsize=3)
+                yerr=final_data['prob_std'], fmt='o-', capsize=3,
+                label='SEDD')
+    if gpt2_df is not None:
+        gpt2_prior = gpt2_df[gpt2_df['distance_to_target'] > 0]
+        gpt2_prob = gpt2_prior.copy()
+        gpt2_prob['target_prob'] = 2.0 ** (-gpt2_prob['target_surprisal_bits'])
+        gpt2_agg = gpt2_prob.groupby('distance_to_target')['target_prob'].agg(
+            ['mean', 'std']).reset_index()
+        gpt2_agg = gpt2_agg.sort_values('distance_to_target')
+        ax.errorbar(gpt2_agg['distance_to_target'], gpt2_agg['mean'],
+                    yerr=gpt2_agg['std'], fmt='s--', capsize=3,
+                    label='GPT-2', color='#9C27B0')
     ax.set_xlabel('Distance to target (tokens)', fontsize=12)
     ax.set_ylabel('P(target token) at final timestep', fontsize=12)
     ax.set_title('How prior positions predict the target', fontsize=13)
     ax.invert_xaxis()
+    ax.legend()
     ax.grid(True, alpha=0.3)
 
-    # Right: surprisal decrease by distance
+    # Right: surprisal decrease by distance (in bits)
     ax = axes[1]
     decrease_data = summary_df.groupby('distance_to_target').agg({
         'surprisal_decrease': ['mean', 'std'],
@@ -444,10 +516,12 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
     decrease_data.columns = ['distance', 'decrease_mean', 'decrease_std']
     decrease_data = decrease_data.sort_values('distance')
 
-    ax.bar(decrease_data['distance'], decrease_data['decrease_mean'],
-           yerr=decrease_data['decrease_std'], capsize=3, alpha=0.7)
+    ax.bar(decrease_data['distance'],
+           decrease_data['decrease_mean'] * NATS_TO_BITS,
+           yerr=decrease_data['decrease_std'] * NATS_TO_BITS,
+           capsize=3, alpha=0.7)
     ax.set_xlabel('Distance to target (tokens)', fontsize=12)
-    ax.set_ylabel('Surprisal decrease during denoising (nats)', fontsize=12)
+    ax.set_ylabel('Surprisal decrease during denoising (bits)', fontsize=12)
     ax.set_title('Priming effect by distance', fontsize=13)
     ax.invert_xaxis()
     ax.grid(True, alpha=0.3)
@@ -459,7 +533,7 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
     plt.close()
 
     # 2. Averaged heatmaps with relative positions (n-1 through n-5)
-    _plot_averaged_heatmaps(detail_df, output_dir)
+    _plot_averaged_heatmaps(detail_df, output_dir, gpt2_df=gpt2_df)
 
     # 3. Condition comparison
     if 'condition' in summary_df.columns and summary_df['condition'].nunique() > 1:
@@ -470,6 +544,18 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
             grouped = grouped.sort_index(ascending=False)
             ax.plot(grouped.index, grouped.values, 'o-', label=cond,
                     markersize=5)
+
+        if gpt2_df is not None:
+            gpt2_prior = gpt2_df[gpt2_df['distance_to_target'] > 0]
+            gpt2_prob = gpt2_prior.copy()
+            gpt2_prob['target_prob'] = 2.0 ** (
+                -gpt2_prob['target_surprisal_bits'])
+            for cond, cond_sub in gpt2_prob.groupby('condition'):
+                grouped = cond_sub.groupby(
+                    'distance_to_target')['target_prob'].mean()
+                grouped = grouped.sort_index(ascending=False)
+                ax.plot(grouped.index, grouped.values, 's--',
+                        label=f'{cond} (GPT-2)', markersize=4, alpha=0.7)
 
         ax.set_xlabel('Distance to target (tokens)', fontsize=12)
         ax.set_ylabel('P(target) at final timestep', fontsize=12)
@@ -502,8 +588,30 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
             label = amb_labels.get(int(amb_val), str(amb_val))
             ax.errorbar(grouped.index, grouped['mean'],
                         yerr=grouped['sem'], fmt='o-',
-                        label=label, color=colors.get(int(amb_val)),
+                        label=f'{label} (SEDD)',
+                        color=colors.get(int(amb_val)),
                         capsize=3, markersize=5)
+        if gpt2_df is not None:
+            gpt2_prior = gpt2_df[gpt2_df['distance_to_target'] > 0]
+            gpt2_prob = gpt2_prior.copy()
+            gpt2_prob['target_prob'] = 2.0 ** (
+                -gpt2_prob['target_surprisal_bits'])
+            gpt2_has_amb = ('ambiguous' in gpt2_prob.columns and
+                            gpt2_prob['ambiguous'].notna().any())
+            if gpt2_has_amb:
+                for amb_val in sorted(
+                        gpt2_prob['ambiguous'].dropna().unique()):
+                    sub = gpt2_prob[gpt2_prob['ambiguous'] == amb_val]
+                    grouped = sub.groupby(
+                        'distance_to_target')['target_prob'].agg(
+                        ['mean', 'sem'])
+                    grouped = grouped.sort_index(ascending=False)
+                    label = amb_labels.get(int(amb_val), str(amb_val))
+                    ax.errorbar(grouped.index, grouped['mean'],
+                                yerr=grouped['sem'], fmt='s--',
+                                label=f'{label} (GPT-2)',
+                                color=colors.get(int(amb_val)),
+                                capsize=3, markersize=4, alpha=0.7)
         ax.set_xlabel('Distance to target (tokens)', fontsize=12)
         ax.set_ylabel('P(target) at final timestep', fontsize=12)
         ax.set_title('Priming: Ambiguous vs Unambiguous', fontsize=13)
@@ -519,12 +627,15 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
                 ['mean', 'sem'])
             grouped = grouped.sort_index(ascending=False)
             label = amb_labels.get(int(amb_val), str(amb_val))
-            ax.errorbar(grouped.index, grouped['mean'],
-                        yerr=grouped['sem'], fmt='o-',
+            ax.errorbar(grouped.index,
+                        grouped['mean'] * NATS_TO_BITS,
+                        yerr=grouped['sem'] * NATS_TO_BITS,
+                        fmt='o-',
                         label=label, color=colors.get(int(amb_val)),
                         capsize=3, markersize=5)
         ax.set_xlabel('Distance to target (tokens)', fontsize=12)
-        ax.set_ylabel('Surprisal decrease during denoising', fontsize=12)
+        ax.set_ylabel('Surprisal decrease during denoising (bits)',
+                       fontsize=12)
         ax.set_title('Priming strength: Amb vs Unamb', fontsize=13)
         ax.invert_xaxis()
         ax.legend(fontsize=11)
@@ -537,7 +648,8 @@ def plot_cross_position(detail_df, summary_df, stimuli, model, output_dir):
         plt.close()
 
 
-def plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir):
+def plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir,
+                        gpt2_df=None):
     """Create separate spillover visualizations for exp2."""
     if len(sp_summary_df) == 0:
         print("  No spillover data to plot.")
@@ -548,39 +660,71 @@ def plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir):
     amb_labels = {0: 'Unambiguous', 1: 'Ambiguous'}
     colors = {0: '#2196F3', 1: '#F44336'}
 
+    gpt2_sp = None
+    if gpt2_df is not None:
+        gpt2_sp = gpt2_df[gpt2_df['distance_to_target'] < 0].copy()
+        gpt2_sp['spillover_offset'] = -gpt2_sp['distance_to_target']
+        gpt2_sp['target_prob'] = 2.0 ** (-gpt2_sp['target_surprisal_bits'])
+
     # --- Figure 1: Spillover overview ---
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-    # Left: P(target) trajectory at each spillover offset across timesteps
     ax = axes[0]
     for offset in sorted(sp_detail_df['spillover_offset'].unique()):
         sub = sp_detail_df[sp_detail_df['spillover_offset'] == offset]
         grouped = sub.groupby('timestep')['target_prob'].agg(['mean', 'sem'])
         grouped = grouped.sort_index(ascending=False)
         ax.plot(grouped.index, grouped['mean'], 'o-',
-                label=f'n+{offset}', markersize=3)
+                label=f'n+{offset} (SEDD)', markersize=3)
         ax.fill_between(grouped.index,
                         grouped['mean'] - grouped['sem'],
                         grouped['mean'] + grouped['sem'], alpha=0.15)
+    if gpt2_sp is not None and len(gpt2_sp) > 0:
+        for offset in sorted(gpt2_sp['spillover_offset'].unique()):
+            sub = gpt2_sp[gpt2_sp['spillover_offset'] == offset]
+            mean_val = sub['target_prob'].mean()
+            ax.axhline(y=mean_val, linestyle='--', alpha=0.6,
+                        label=f'n+{int(offset)} (GPT-2)')
     ax.set_xlabel('Timestep (noise → clean)', fontsize=12)
     ax.set_ylabel('P(target token)', fontsize=12)
     ax.set_title('Spillover: P(target) at post-target positions', fontsize=13)
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
 
-    # Right: Final P(target) bar chart by spillover offset
     ax = axes[1]
     final_by_offset = sp_summary_df.groupby('spillover_offset').agg({
         'target_prob_final': ['mean', 'sem'],
     }).reset_index()
     final_by_offset.columns = ['offset', 'prob_mean', 'prob_sem']
+    x_pos = np.arange(len(final_by_offset))
     x_labels = [f'n+{int(o)}' for o in final_by_offset['offset']]
-    ax.bar(x_labels, final_by_offset['prob_mean'],
-           yerr=final_by_offset['prob_sem'], capsize=5, alpha=0.7,
-           color='#4CAF50')
+    bar_width = 0.35
+    ax.bar(x_pos - bar_width / 2, final_by_offset['prob_mean'],
+           bar_width, yerr=final_by_offset['prob_sem'], capsize=5,
+           alpha=0.7, color='#4CAF50', label='SEDD')
+    if gpt2_sp is not None and len(gpt2_sp) > 0:
+        gpt2_final = gpt2_sp.groupby('spillover_offset')['target_prob'].agg(
+            ['mean', 'sem']).reset_index()
+        gpt2_offsets = set(gpt2_final['spillover_offset'])
+        gpt2_means = []
+        gpt2_sems = []
+        for o in final_by_offset['offset']:
+            row = gpt2_final[gpt2_final['spillover_offset'] == o]
+            if len(row) > 0:
+                gpt2_means.append(row['mean'].values[0])
+                gpt2_sems.append(row['sem'].values[0])
+            else:
+                gpt2_means.append(0)
+                gpt2_sems.append(0)
+        ax.bar(x_pos + bar_width / 2, gpt2_means, bar_width,
+               yerr=gpt2_sems, capsize=5, alpha=0.7, color='#9C27B0',
+               label='GPT-2')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(x_labels)
     ax.set_xlabel('Post-target position', fontsize=12)
     ax.set_ylabel('P(target) at final timestep', fontsize=12)
     ax.set_title('Spillover strength by distance', fontsize=13)
+    ax.legend()
     ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
@@ -608,12 +752,26 @@ def plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir):
                 grouped = grouped.sort_index(ascending=False)
                 label = amb_labels.get(int(amb_val), str(amb_val))
                 ax.plot(grouped.index, grouped['mean'], 'o-',
-                        label=label, color=colors.get(int(amb_val)),
+                        label=f'{label} (SEDD)',
+                        color=colors.get(int(amb_val)),
                         markersize=3)
                 ax.fill_between(grouped.index,
                                 grouped['mean'] - grouped['sem'],
                                 grouped['mean'] + grouped['sem'],
                                 alpha=0.15, color=colors.get(int(amb_val)))
+            if gpt2_sp is not None and len(gpt2_sp) > 0:
+                gpt2_off = gpt2_sp[gpt2_sp['spillover_offset'] == offset]
+                gpt2_has_amb = ('ambiguous' in gpt2_off.columns and
+                                gpt2_off['ambiguous'].notna().any())
+                if gpt2_has_amb:
+                    for amb_val in sorted(
+                            gpt2_off['ambiguous'].dropna().unique()):
+                        amb_sub = gpt2_off[gpt2_off['ambiguous'] == amb_val]
+                        mean_val = amb_sub['target_prob'].mean()
+                        label = amb_labels.get(int(amb_val), str(amb_val))
+                        ax.axhline(y=mean_val, linestyle='--', alpha=0.6,
+                                    color=colors.get(int(amb_val)),
+                                    label=f'{label} (GPT-2)')
             ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
             ax.set_ylabel('P(target token)', fontsize=10)
             ax.set_title(f'Position n+{offset}', fontsize=12)
@@ -640,6 +798,10 @@ def main():
                         help='Diffusion steps (lower = faster but coarser)')
     parser.add_argument('--save-every', type=int, default=4,
                         help='Record every N steps')
+    parser.add_argument('--gpt2-device', type=str, default='cpu',
+                        help='Device for GPT-2 baseline')
+    parser.add_argument('--no-gpt2', action='store_true',
+                        help='Skip GPT-2 baseline computation')
     args = parser.parse_args()
 
     output_dir = create_output_dir(args.output_dir)
@@ -710,9 +872,17 @@ def main():
         }).round(6)
         print(sp_dist.to_string())
 
+    gpt2_df = None
+    if not args.no_gpt2:
+        print("\nLoading GPT-2...")
+        gpt2 = GPT2ModelWrapper(device=args.gpt2_device)
+        gpt2_df = compute_gpt2_baseline(stimuli, gpt2)
+
     print("\nCreating plots...")
-    plot_cross_position(detail_df, summary_df, stimuli, model, output_dir)
-    plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir)
+    plot_cross_position(detail_df, summary_df, stimuli, model, output_dir,
+                        gpt2_df=gpt2_df)
+    plot_spillover_exp2(sp_detail_df, sp_summary_df, output_dir,
+                        gpt2_df=gpt2_df)
 
     print("\nDone.")
     return 0

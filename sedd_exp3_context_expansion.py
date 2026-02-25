@@ -34,7 +34,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from sedd_experiment_utils import (
-    SEDDModelWrapper, StimulusLoader, compute_surprisal, create_output_dir
+    SEDDModelWrapper, StimulusLoader, compute_surprisal, create_output_dir,
+    GPT2ModelWrapper, compute_gpt2_baseline, NATS_TO_BITS
 )
 from sampling import get_predictor, Denoiser
 from model import utils as mutils
@@ -126,7 +127,7 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8,
                             'target_prob_at_self': target_prob_at_self,
                             'target_prob_at_prev': target_prob_at_prev,
                             'target_surprisal': compute_surprisal(
-                                target_prob_at_self) if target_prob_at_self else None,
+                                target_prob_at_self) * NATS_TO_BITS if target_prob_at_self else None,
                             'entropy': entropy,
                             'target_rank': rank,
                         }
@@ -166,7 +167,7 @@ def run_context_expansion(model, stimuli, num_steps=256, save_every=8,
                     'target_prob_at_self': final_prob,
                     'target_prob_at_prev': final_prob_prev,
                     'target_surprisal': compute_surprisal(
-                        final_prob) if final_prob else None,
+                        final_prob) * NATS_TO_BITS if final_prob else None,
                     'entropy': 0.0,
                     'target_rank': 1 if final_correct else None,
                 }
@@ -273,11 +274,15 @@ def _build_context_heatmap(subset_df, prob_column='target_prob_at_self'):
     return avg_heatmap, counts, ctx_sizes, timesteps
 
 
-def _render_context_heatmap_grid(slices_data, output_path, ncols=None):
+def _render_context_heatmap_grid(slices_data, output_path, ncols=None,
+                                  gpt2_values=None):
     """
     Render a grid of context-expansion heatmaps.
 
     slices_data: list of (label, heatmap, counts, ctx_sizes, timesteps)
+    gpt2_values: optional list of GPT-2 P(target) values, one per slice.
+                 If provided, each non-None value is appended as an extra
+                 column separated by a white line.
     """
     n = len(slices_data)
     if n == 0:
@@ -294,21 +299,36 @@ def _render_context_heatmap_grid(slices_data, output_path, ncols=None):
     for _, hm, _, _, _ in slices_data:
         if hm is not None:
             vmax_global = max(vmax_global, hm.max())
+    if gpt2_values:
+        for v in gpt2_values:
+            if v is not None:
+                vmax_global = max(vmax_global, v)
     if vmax_global == 0:
         vmax_global = 1e-6
 
     for idx, (label, hm, ct, ctx_sizes, ts) in enumerate(slices_data):
         r, c = divmod(idx, ncols)
         ax = axes[r][c]
+        gpt2_val = (gpt2_values[idx]
+                    if gpt2_values and idx < len(gpt2_values) else None)
 
         if hm is None:
             ax.set_title(f'{label}\n(no data)')
             ax.axis('off')
             continue
 
-        im = ax.imshow(hm, aspect='auto', cmap='YlOrRd',
+        if gpt2_val is not None:
+            gpt2_col = np.full((hm.shape[0], 1), gpt2_val)
+            hm_ext = np.hstack([hm, gpt2_col])
+        else:
+            hm_ext = hm
+
+        im = ax.imshow(hm_ext, aspect='auto', cmap='YlOrRd',
                         interpolation='nearest',
                         vmin=0, vmax=vmax_global)
+
+        if gpt2_val is not None:
+            ax.axvline(x=len(ts) - 0.5, color='white', linewidth=2)
 
         ax.set_yticks(range(len(ctx_sizes)))
         ax.set_yticklabels([str(s) for s in ctx_sizes], fontsize=8)
@@ -316,9 +336,14 @@ def _render_context_heatmap_grid(slices_data, output_path, ncols=None):
         n_ts = len(ts)
         tick_step = max(1, n_ts // 8)
         x_tick_idx = list(range(0, n_ts, tick_step))
+        x_labels = [f'{ts[i]:.2f}' for i in x_tick_idx]
+
+        if gpt2_val is not None:
+            x_tick_idx.append(n_ts)
+            x_labels.append('GPT-2')
+
         ax.set_xticks(x_tick_idx)
-        ax.set_xticklabels([f'{ts[i]:.2f}' for i in x_tick_idx],
-                            fontsize=7, rotation=45)
+        ax.set_xticklabels(x_labels, fontsize=7, rotation=45)
         ax.set_xlabel('Timestep (noise → clean)', fontsize=10)
         ax.set_ylabel('Context words revealed', fontsize=10)
 
@@ -338,7 +363,7 @@ def _render_context_heatmap_grid(slices_data, output_path, ncols=None):
     plt.close()
 
 
-def plot_context_expansion(detail_df, summary_df, output_dir):
+def plot_context_expansion(detail_df, summary_df, output_dir, gpt2_df=None):
     """Create heatmap visualizations of context expansion results."""
     if len(detail_df) == 0:
         print("  No data to plot.")
@@ -347,6 +372,14 @@ def plot_context_expansion(detail_df, summary_df, output_dir):
     has_ambig = ('ambiguous' in detail_df.columns and
                  detail_df['ambiguous'].notna().any())
     has_base = 'base_condition' in detail_df.columns
+
+    def _gpt2_target_prob(gpt2_subset):
+        if gpt2_subset is None or len(gpt2_subset) == 0:
+            return None
+        at_target = gpt2_subset[gpt2_subset['distance_to_target'] == 1]
+        if len(at_target) == 0:
+            return None
+        return 2 ** (-at_target['target_surprisal_bits'].mean())
 
     # --- Figure 1: All / Ambiguous / Unambiguous heatmaps ---
     slices = [('All sentences', detail_df)]
@@ -359,8 +392,18 @@ def plot_context_expansion(detail_df, summary_df, output_dir):
         hm, ct, ctx, ts = _build_context_heatmap(sub)
         heatmaps.append((label, hm, ct, ctx, ts))
 
+    gpt2_values = None
+    if gpt2_df is not None:
+        gpt2_values = [_gpt2_target_prob(gpt2_df)]
+        if has_ambig:
+            gpt2_values.append(_gpt2_target_prob(
+                gpt2_df[gpt2_df['ambiguous'] == 1]))
+            gpt2_values.append(_gpt2_target_prob(
+                gpt2_df[gpt2_df['ambiguous'] == 0]))
+
     _render_context_heatmap_grid(
-        heatmaps, f'{output_dir}/exp3_context_expansion.png')
+        heatmaps, f'{output_dir}/exp3_context_expansion.png',
+        gpt2_values=gpt2_values)
 
     # Print contribution counts
     for label, hm, ct, ctx, ts in heatmaps:
@@ -376,13 +419,18 @@ def plot_context_expansion(detail_df, summary_df, output_dir):
     if has_base:
         base_conds = sorted(detail_df['base_condition'].unique())
         cond_heatmaps = []
+        cond_gpt2_values = [] if gpt2_df is not None else None
         for bc in base_conds:
             sub = detail_df[detail_df['base_condition'] == bc]
             hm, ct, ctx, ts = _build_context_heatmap(sub)
             cond_heatmaps.append((bc, hm, ct, ctx, ts))
+            if gpt2_df is not None:
+                cond_gpt2_values.append(_gpt2_target_prob(
+                    gpt2_df[gpt2_df['base_condition'] == bc]))
 
         _render_context_heatmap_grid(
-            cond_heatmaps, f'{output_dir}/exp3_by_condition.png')
+            cond_heatmaps, f'{output_dir}/exp3_by_condition.png',
+            gpt2_values=cond_gpt2_values)
 
 
 def plot_spillover_exp3(summary_df, output_dir, max_spillover=3):
@@ -477,6 +525,10 @@ def main():
                         help='Record every N steps')
     parser.add_argument('--max-items', type=int, default=None,
                         help='Limit items (for testing)')
+    parser.add_argument('--gpt2-device', type=str, default=None,
+                        help='Device for GPT-2 (default: same as --device)')
+    parser.add_argument('--no-gpt2', action='store_true',
+                        help='Skip GPT-2 baseline')
     args = parser.parse_args()
 
     output_dir = create_output_dir(args.output_dir)
@@ -537,8 +589,16 @@ def main():
         }).round(4)
         print(ctx_summary.to_string())
 
+    gpt2_df = None
+    if not args.no_gpt2:
+        print("\nLoading GPT-2...")
+        gpt2_device = args.gpt2_device or args.device
+        gpt2 = GPT2ModelWrapper(device=gpt2_device)
+        gpt2_df = compute_gpt2_baseline(stimuli, gpt2)
+        print(f"  GPT-2 baseline: {len(gpt2_df)} rows")
+
     print("\nCreating plots...")
-    plot_context_expansion(detail_df, summary_df, output_dir)
+    plot_context_expansion(detail_df, summary_df, output_dir, gpt2_df=gpt2_df)
     plot_spillover_exp3(summary_df, output_dir)
 
     print("\nDone.")
