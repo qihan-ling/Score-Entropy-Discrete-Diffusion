@@ -157,7 +157,7 @@ def run_experiment(
             # --- Collect pre-step score at frontier (for metrics) ---
             if ltr and frontier < 1024:
                 curr_sigma = noise(t)[0]
-                with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+                with torch.amp.autocast("cuda", dtype=torch.bfloat16):
                     raw_score = score_fn(x, curr_sigma)
 
                 target_tok = target_ids[frontier] if (target_ids and frontier < len(target_ids)) else None

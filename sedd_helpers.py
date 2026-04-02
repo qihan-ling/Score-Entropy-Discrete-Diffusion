@@ -66,7 +66,7 @@ def set_causal_mode(model, causal):
 
                 qkv = blk.attn_qkv(x)
                 qkv = rearrange(qkv, "b s (three h d) -> b s three h d", three=3, h=blk.n_heads)
-                with torch.cuda.amp.autocast(enabled=False):
+                with torch.amp.autocast("cuda", enabled=False):
                     cos, sin = rotary_cos_sin
                     qkv = rotary_module.apply_rotary_pos_emb(
                         qkv, cos.to(qkv.dtype), sin.to(qkv.dtype)

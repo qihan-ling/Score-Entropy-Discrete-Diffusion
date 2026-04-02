@@ -92,7 +92,7 @@ def inspect_architecture(model_path, device):
 
         # 4. DDiT blocks
         block_input = h
-        with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+        with torch.amp.autocast("cuda", dtype=torch.bfloat16):
             for idx, block in enumerate(model.blocks):
                 block_output = block(block_input, rotary_cos_sin, c, seqlens=None)
 

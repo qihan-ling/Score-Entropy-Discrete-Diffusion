@@ -38,7 +38,9 @@ def run_trajectory(model_path, steps, device, seed=42):
     denoiser = Denoiser(graph, noise)
 
     batch_dims = (1, 1024)
+    # sample_limit returns a tensor of size batch_dims filled with random integers sampled uniformly from the range [0, graph.dim - 1]
     x = graph.sample_limit(*batch_dims).to(device)
+    # torch.linspace creates a one-dimensional tensor containing a set of evenly spaced values over (1, eps)
     timesteps = torch.linspace(1, eps, steps + 1, device=device)
     dt = (1 - eps) / steps
 
