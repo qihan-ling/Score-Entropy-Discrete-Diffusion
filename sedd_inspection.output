@@ -1,0 +1,107 @@
+======================================================================
+SEDD Architecture Inspection
+======================================================================
+
+Model config:
+  hidden_size  = 1024
+  n_heads      = 16
+  n_blocks     = 24
+  cond_dim     = 128
+  length       = 1024
+  dropout      = 0.1
+  scale_by_sigma = True
+  graph type   = absorb
+  absorb       = True
+  vocab_size   = 50258 (tokens=50257 + absorb=1)
+  MASK token   = 50257
+
+======================================================================
+Creating dummy input (all MASK tokens)
+======================================================================
+
+  x shape       = torch.Size([1, 1024])
+  x dtype       = torch.int64
+  x[0, :5]      = [50257, 50257, 50257, 50257, 50257]
+  all MASK?      = True
+
+  t              = 0.5
+  sigma          = 0.692148
+
+======================================================================
+Layer-by-layer forward pass
+======================================================================
+
+[vocab_embed]
+  input:  x          torch.Size([1, 1024]) (int64)
+  output: h          torch.Size([1, 1024, 1024])
+  embed weight shape torch.Size([50258, 1024])
+
+[sigma_map + SiLU]
+  input:  sigma      torch.Size([1])
+  output: c          torch.Size([1, 128])
+  c range            [-0.0681, 0.2186]
+
+[rotary_emb]
+  input:  h          torch.Size([1, 1024, 1024])
+  cos shape          torch.Size([1, 1024, 3, 1, 64])
+  sin shape          torch.Size([1, 1024, 3, 1, 64])
+
+[DDiTBlock 0 (first)]
+  input shape        torch.Size([1, 1024, 1024])
+  output shape       torch.Size([1, 1024, 1024])
+  output dtype       torch.float32
+  output range       [-21.5874, 12.4734]
+  adaLN_modulation   torch.Size([1, 6144]) -> 6 chunks of 1024
+
+  ... (22 more blocks) ...
+
+[DDiTBlock 23 (last)]
+  input shape        torch.Size([1, 1024, 1024])
+  output shape       torch.Size([1, 1024, 1024])
+  output dtype       torch.float32
+  output range       [-838.6545, 2615.8525]
+  adaLN_modulation   torch.Size([1, 6144]) -> 6 chunks of 1024
+
+[output_layer (DDitFinalLayer)]
+  input shape        torch.Size([1, 1024, 1024])
+  output shape       torch.Size([1, 1024, 50258])
+  output range       [-11.187500, 7.312500]
+
+[scale_by_sigma]
+  esigm1_log         -0.001999
+  log(V-1)           10.824905
+  scaled range       [-22.000000, -3.515625]
+
+[diagonal masking (scatter)]
+  output shape       torch.Size([1, 1024, 50258])
+
+======================================================================
+Verification: full model.forward() vs manual computation
+======================================================================
+
+  full_output shape  torch.Size([1, 1024, 50258])
+  max abs diff       0.00e+00
+  match?             YES
+
+======================================================================
+Verification: diagonal masking
+======================================================================
+
+  For each position i, output[0, i, x[0,i]] should be 0 (diagonal masking)
+  All diagonal entries zero? True
+
+======================================================================
+Score interpretation at position 0
+======================================================================
+
+  Top 5 tokens (normalized probability):
+     50257  ''                    p=0.504251
+       262  ' the'                p=0.014530
+        13  '.'                   p=0.014530
+        11  ','                   p=0.014083
+       198  '\n'                  p=0.013649
+
+  Score at MASK token (should be 0 due to diagonal masking):
+    score[MASK=50257] = 0.000000
+
+Done.
