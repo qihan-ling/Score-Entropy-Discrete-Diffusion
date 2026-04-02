@@ -20,7 +20,7 @@ from .fused_add_dropout_scale import (
 ##########################
 # Standard Attention
 ##########################
-def standard_attention_varlen(qkv, cu_seqlens, max_seqlen, dropout_p=0., causal=False):
+def standard_attention_varlen(qkv, cu_seqlens, max_seqlen, dropout_p=0., causal=False, training=False):
     """
     Standard PyTorch attention matching flash_attn_varlen_qkvpacked_func.
     
@@ -119,7 +119,7 @@ def standard_attention_varlen(qkv, cu_seqlens, max_seqlen, dropout_p=0., causal=
     attn_weights = torch.nan_to_num(attn_weights, nan=0.0)
     
     # Apply dropout
-    if dropout_p > 0 and self.training:  # Note: only in training mode
+    if dropout_p > 0 and training:
         attn_weights = F.dropout(attn_weights, p=dropout_p, training=True)
     
     # Apply attention to values: [batch_size, num_heads, max_seqlen, head_dim]
