@@ -1,0 +1,125 @@
+======================================================================
+SEDD Experiment: LTR | noncausal | renoise(sigma=1.0)
+======================================================================
+  model:    louaaron/sedd-medium
+  prefix:   'The horse raced past the barn'
+  target:   'The horse raced past the barn fell'
+  steps:    1024
+  seed:     42
+  ltr:      True
+  causal:   False
+  renoise:  True (sigma=1.0)
+======================================================================
+
+Setting non-causal attention mode (matches pretrained weights)...
+  prefix tokens (6): [464, 8223, 32897, 1613, 262, 25203]
+  prefix decoded: 'The horse raced past the barn'
+  target tokens (7): [464, 8223, 32897, 1613, 262, 25203, 3214]
+  target decoded: 'The horse raced past the barn fell'
+
+======================================================================
+Sampling loop (1024 steps)
+======================================================================
+
+  step     0 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step     1 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step     2 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step     3 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step     4 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step    51 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   102 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   153 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   204 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   255 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   306 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   357 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   408 | frontier=   6 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:F:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK]
+  step   459 | frontier=   7 | unmasked=    7 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:C:'.' | 7:F:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK]
+  step   510 | frontier=   7 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:F:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK]
+  step   561 | frontier=   7 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:F:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK]
+  step   612 | frontier=   7 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:F:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK]
+  step   663 | frontier=   7 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:F:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK]
+  step   714 | frontier=   8 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:M:[MASK] | 8:F:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK]
+  step   765 | frontier=   8 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:M:[MASK] | 8:F:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK]
+  step   816 | frontier=   8 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:M:[MASK] | 8:F:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK]
+  step   867 | frontier=   8 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:M:[MASK] | 8:F:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK]
+  step   918 | frontier=   8 | unmasked=    7 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:C:' and' | 7:M:[MASK] | 8:F:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK]
+  step   969 | frontier=   8 | unmasked=    6 | 0:P:'The' | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:M:[MASK] | 8:F:[MASK] | 9:M:[MASK] | 10:M:[MASK] | 11:M:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK]
+  step  1020 | frontier=  11 | unmasked=    7 | 1:P:' horse' | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:M:[MASK] | 7:M:[MASK] | 8:M:[MASK] | 9:M:[MASK] | 10:C:' feet' | 11:F:[MASK] | 12:M:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK] | 18:M:[MASK] | 19:M:[MASK] | 20:M:[MASK]
+  step  1023 | frontier=  12 | unmasked=   12 | 2:P:' raced' | 3:P:' past' | 4:P:' the' | 5:P:' barn' | 6:C:' and' | 7:C:' around' | 8:C:' a' | 9:C:' position' | 10:C:'degree' | 11:C:' followed' | 12:F:[MASK] | 13:M:[MASK] | 14:M:[MASK] | 15:M:[MASK] | 16:M:[MASK] | 17:M:[MASK] | 18:M:[MASK] | 19:M:[MASK] | 20:M:[MASK] | 21:M:[MASK]
+
+Final denoising step...
+
+======================================================================
+Results: LTR | noncausal | renoise(sigma=1.0)
+======================================================================
+
+Generated text (first 300 chars):
+  The horse raced past the barn in a 180-degree followed by a no- of right sustainediding left then lies Its water�OL fear follow violently for andenth drawn unknownrums hit The buildingPLE F spun been a red far rate horses I
+ R in swing other the a, positiont
+cdown Sh the sun Mann journalists
+ to beg
+
+======================================================================
+Commitment log (first 30 positions)
+======================================================================
+
+  Pos   Step  #Steps  Flicker                          Token
+------------------------------------------------------------
+    6    459     460        0                            '.'
+    7    675     216        0                       ' front'
+    8   1009     334        7                       ' clock'
+    9   1017       8        1                        ' trip'
+   10   1020       3        1                        ' feet'
+   11   1023       3        1                    ' followed'
+   12   1024       1        0                          ' by'
+   13   1024       1        0                           ' a'
+   14   1024       1        0                          ' no'
+   15   1024       1        0                            '-'
+   16   1024       1        0                          ' of'
+   17   1024       1        0                       ' right'
+   18   1024       1        0                   ' sustained'
+   19   1024       1        0                        'iding'
+   20   1024       1        0                        ' left'
+   21   1024       1        0                        ' then'
+   22   1024       1        0                        ' lies'
+   23   1024       1        0                         ' Its'
+   24   1024       1        0                       ' water'
+   25   1024       1        0                            '�'
+   26   1024       1        0                           'OL'
+   27   1024       1        0                        ' fear'
+   28   1024       1        0                      ' follow'
+   29   1024       1        0                   ' violently'
+   30   1024       1        0                         ' for'
+   31   1024       1        0                         ' and'
+   32   1024       1        0                         'enth'
+   33   1024       1        0                       ' drawn'
+   34   1024       1        0                     ' unknown'
+   35   1024       1        0                         'rums'
+
+  Total committed: 1018
+  Avg steps/token: 2.0
+  Avg flickering:  0.0
+
+======================================================================
+Frontier metrics (per-position summary)
+======================================================================
+
+  Pos                Token   Avg Surp  Avg Entropy   #Steps
+------------------------------------------------------------
+    6                  '.'     17.791        1.923      460
+      last step top-5: '':0.519, ' and':0.095, ',':0.089, '.':0.061, ' door':0.051
+    7             ' front'        nan        6.156      216
+      last step top-5: '':0.343, ' the':0.052, ' and':0.029, '\n':0.023, ' a':0.020
+    8             ' clock'        nan        8.713      334
+      last step top-5: ' barn':0.038, ' gate':0.025, ' horse':0.021, ' door':0.021, ' fence':0.018
+    9              ' trip'        nan        8.891        8
+      last step top-5: ' to':0.181, '.':0.110, ' of':0.086, ' home':0.067, ' trip':0.059
+   10              ' feet'        nan        8.006        3
+      last step top-5: ' the':0.065, '.':0.042, ',':0.040, ' and':0.031, ' to':0.021
+   11          ' followed'        nan        7.265        3
+      last step top-5: ' the':0.074, '.':0.058, ',':0.053, ' and':0.039, ' of':0.030
+
+Final: 1024 / 1024 unmasked, 0 still MASK
+
+Done. Config: LTR | noncausal | renoise(sigma=1.0)
