@@ -13,10 +13,72 @@ from model import utils as mutils
 
 
 def load_sedd_model(model_path, device):
-    """Load SEDD model, graph, noise, and tokenizer."""
+    """Load SEDD model, graph, noise, and tokenizer.
+
+    Uses add_prefix_space=True to match sapbenchmark/Surprisals/get_gpt2_full.py,
+    ensuring the first word is tokenized with a leading space (consistent with
+    how GPT-2/SEDD see tokens in context).
+    """
     model, graph, noise = load_model(model_path, device)
-    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2", add_prefix_space=True)
     return model, graph, noise, tokenizer
+
+
+def tokenize_sentence(tokenizer, sentence):
+    """Tokenize a sentence with <|endoftext|> prefix.
+
+    Matches sapbenchmark methodology (get_gpt2_full.py line 38):
+      tokenizer("<|endoftext|> " + sentence)
+
+    Returns:
+        list of int: token IDs starting with <|endoftext|> (50256)
+    """
+    return tokenizer("<|endoftext|> " + sentence).input_ids
+
+
+def align_tokens_to_words(words, tokens):
+    """Align BPE tokens to whitespace-delimited words.
+
+    Replicates sapbenchmark/Surprisals/util.py::align().
+
+    Args:
+        words: list of str from sentence.split()
+        tokens: list of str from tokenizer.tokenize(sentence)
+
+    Returns:
+        (aligned, breaks) where:
+          aligned[i] = list of token pieces making up word i
+          breaks[i]:breaks[i+1] = token index range for word i
+    """
+    import re
+    def _clean(token):
+        return re.sub(r"[^a-zA-Z0-9*.,!?\-]", "", token)
+
+    cleaned = [_clean(t) for t in tokens]
+    aligned = []
+    idx_word = 0
+    current_pieces = []
+
+    for idx_piece, piece in enumerate(cleaned):
+        if idx_word < len(words):
+            word = words[idx_word]
+        else:
+            current_pieces += cleaned[idx_piece:]
+            break
+
+        if piece == word[:len(piece)]:
+            aligned.append(current_pieces)
+            idx_word += 1
+            current_pieces = [piece]
+        else:
+            current_pieces.append(piece)
+
+    aligned.append(current_pieces)
+    aligned = aligned[1:]
+
+    breaks = [len(pieces) for pieces in aligned]
+    breaks = [0] + [sum(breaks[:i + 1]) for i in range(len(breaks))]
+    return aligned, breaks
 
 
 def get_sampling_score_fn(model):
@@ -141,6 +203,23 @@ def renoise_fn(x, graph, frontier_pos, prefix_len, renoise_sigma):
 # Frontier metrics
 # ---------------------------------------------------------------------------
 
+def compute_kl_divergence(p, q):
+    """Compute D_KL(p || q) in bits.
+
+    Args:
+        p: [V] tensor, current distribution (normalized)
+        q: [V] tensor, previous distribution (normalized)
+
+    Returns:
+        float: KL divergence in bits
+    """
+    mask = (p > 1e-30) & (q > 1e-30)
+    if mask.sum() == 0:
+        return 0.0
+    kl = (p[mask] * torch.log2(p[mask] / q[mask])).sum().item()
+    return max(kl, 0.0)
+
+
 def compute_frontier_metrics(score, frontier_pos, target_token_id, tokenizer, top_k=5):
     """
     Compute metrics at the frontier position from the score tensor.
@@ -153,7 +232,7 @@ def compute_frontier_metrics(score, frontier_pos, target_token_id, tokenizer, to
         top_k: number of top candidates to return
 
     Returns:
-        dict with surprisal, entropy, top_k_tokens, argmax_token
+        dict with surprisal, entropy, top_k_tokens, argmax_token, probs
     """
     probs = score[0, frontier_pos]  # [V]
     probs_sum = probs.sum()
@@ -165,12 +244,10 @@ def compute_frontier_metrics(score, frontier_pos, target_token_id, tokenizer, to
     surprisal = -np.log2(max(target_prob, 1e-30))
 
     entropy = -(p * log2_p).sum().item()
-    # Filter out NaN from zero-prob entries
     if np.isnan(entropy):
         entropy = 0.0
 
     topk_vals, topk_ids = probs.topk(top_k)
-    topk_total = topk_vals.sum()
     top_k_tokens = []
     for val, tid in zip(topk_vals, topk_ids):
         tid_int = tid.item()
@@ -187,6 +264,7 @@ def compute_frontier_metrics(score, frontier_pos, target_token_id, tokenizer, to
         "top_k": top_k_tokens,
         "argmax_id": argmax_id,
         "argmax_token": tokenizer.decode([argmax_id]),
+        "probs": p,
     }
 
 
