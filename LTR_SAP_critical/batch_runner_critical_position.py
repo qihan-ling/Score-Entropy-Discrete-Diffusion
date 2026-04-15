@@ -24,16 +24,18 @@ import os
 import time
 from pathlib import Path
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+_repo_root = os.path.join(_this_dir, "..")
+_analysis_dir = os.path.join(_repo_root, "LTR_SAP", "analysis")
 
-import torch
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from transformer_critical_position import run_critical_position
-
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "LTR_SAP", "analysis"))
+sys.path.insert(0, _analysis_dir)
 from utils import get_sap_files, get_subset_name, get_critical_pos_col, load_sap_csv
 
+sys.path.insert(0, _this_dir)
+from transformer_critical_position import run_critical_position
+
+sys.path.append(_repo_root)
+import torch
 from sedd_helpers import load_sedd_model
 
 RESULT_DIR = Path(__file__).resolve().parent
