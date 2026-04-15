@@ -21,6 +21,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SAP_STIMULI_DIR = REPO_ROOT / "SAP_stimuli"
 LTR_SAP_DIR = REPO_ROOT / "LTR_SAP"
+LTR_SAP_CRITICAL_DIR = REPO_ROOT / "LTR_SAP_critical"
 ET_DATA_PATH = (
     REPO_ROOT
     / "Huang_et_al_2024_spr_osf"
@@ -342,6 +343,89 @@ def aggregate_metrics_by_word(aligned_log, merge_fn="sum"):
         if kls:
             agg["cumulative_kl"] = fn(kls)
         result.append(agg)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Weighted steps metric (for strict-LTR position deconfounding)
+# ---------------------------------------------------------------------------
+
+def compute_weighted_steps(commitment_log, total_steps=1024):
+    """Compute weighted_steps = steps_taken * (1 - t_commitment).
+
+    t_commitment = 1 - step/total_steps is the noise level at commitment.
+    At high noise (t near 1), the weight (1-t) is small; at low noise the weight
+    is large. This normalizes for the position confound where later positions
+    commit at lower noise and take fewer steps.
+
+    Args:
+        commitment_log: list of dicts from SEDD strict-LTR output
+        total_steps: total number of denoising steps used
+
+    Returns:
+        list of dicts, each augmented with 'weighted_steps' and 't_commitment'
+    """
+    result = []
+    for entry in commitment_log:
+        e = dict(entry)
+        step = entry["step"]
+        t_commit = 1.0 - step / total_steps
+        e["t_commitment"] = t_commit
+        e["weighted_steps"] = entry["steps_taken"] * (1.0 - t_commit)
+        result.append(e)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Critical-position output loading
+# ---------------------------------------------------------------------------
+
+def load_critical_output(json_path):
+    """Load a critical-position experiment output JSON."""
+    with open(json_path) as f:
+        return json.load(f)
+
+
+def load_all_critical_outputs(subset, condition=None):
+    """Load all critical-position outputs for a subset/condition.
+
+    Returns:
+        list of dicts (loaded JSONs)
+    """
+    if condition:
+        pattern_dir = LTR_SAP_CRITICAL_DIR / subset / condition
+    else:
+        pattern_dir = LTR_SAP_CRITICAL_DIR / subset
+    results = []
+    if pattern_dir.exists():
+        for f in sorted(pattern_dir.glob("item_*_pos_*.json")):
+            results.append(load_critical_output(f))
+    return results
+
+
+def load_critical_outputs_by_offset(subset, condition, offsets=None):
+    """Load critical-position outputs grouped by offset.
+
+    Args:
+        subset: e.g. "Agreement"
+        condition: e.g. "AGREE"
+        offsets: list of offsets to load, default [-2, -1, 0, 1, 2, 3]
+
+    Returns:
+        dict: offset -> list of loaded JSONs
+    """
+    if offsets is None:
+        offsets = [-2, -1, 0, 1, 2, 3]
+    result = {}
+    if condition:
+        d = LTR_SAP_CRITICAL_DIR / subset / condition
+    else:
+        d = LTR_SAP_CRITICAL_DIR / subset
+    for offset in offsets:
+        sign = "+" if offset >= 0 else ""
+        pattern = f"item_*_pos_{sign}{offset}.json"
+        files = sorted(d.glob(pattern)) if d.exists() else []
+        result[offset] = [load_critical_output(f) for f in files]
     return result
 
 
