@@ -37,6 +37,7 @@ from sedd_helpers import (
     compute_kl_divergence,
 )
 from sampling import get_predictor, Denoiser
+import torch.nn.functional as F
 
 
 def run_critical_position(
@@ -176,6 +177,34 @@ def run_critical_position(
                 committed_str = tokenizer.decode([committed_token])
                 correct = (committed_token == target_tok) if target_tok is not None else None
 
+                # Compute commitment-time details from both distributions
+                commit_extras = {}
+                curr_sigma_c = noise(t)[0]
+                with torch.amp.autocast("cuda", dtype=torch.bfloat16):
+                    raw_score_c = score_fn(x, curr_sigma_c)
+                stag_c = graph.staggered_score(raw_score_c, curr_sigma_c)
+                tt_c = graph.transp_transition(x, curr_sigma_c)
+                s_probs = stag_c[0, frontier] * tt_c[0, frontier]
+                if graph.absorb:
+                    s_probs = s_probs[:-1]
+                s_sum = s_probs.sum().clamp(min=1e-30)
+                s_p = s_probs / s_sum
+                k50 = min(50, s_p.shape[0])
+                s_vals, s_ids = s_p.topk(k50)
+                commit_extras["top50_ids"] = s_ids.tolist()
+                commit_extras["top50_probs"] = s_vals.tolist()
+
+                r_probs = raw_score_c[0, frontier]
+                r_sum = r_probs.sum().clamp(min=1e-30)
+                r_p = r_probs / r_sum
+                vocab_size = graph.dim - 1 if graph.absorb else graph.dim
+                if r_p.shape[0] > vocab_size:
+                    r_p = r_p[:vocab_size]
+                    r_p = r_p / r_p.sum().clamp(min=1e-30)
+                r_vals, r_ids = r_p.topk(min(50, r_p.shape[0]))
+                commit_extras["p_model_top50_ids"] = r_ids.tolist()
+                commit_extras["p_model_top50_probs"] = r_vals.tolist()
+
                 commitment_entry = {
                     "position": frontier,
                     "word_position": target_word_position,
@@ -187,10 +216,13 @@ def run_critical_position(
                     "committed_token": committed_str,
                     "final_surprisal": frontier_history[-1]["surprisal"] if frontier_history else None,
                     "final_entropy": frontier_history[-1]["entropy"] if frontier_history else None,
+                    "final_sampler_entropy": frontier_history[-1].get("sampler_entropy") if frontier_history else None,
+                    "final_sampler_p_target": frontier_history[-1].get("sampler_p_target") if frontier_history else None,
                     "cumulative_kl": cumulative_kl,
                     "target_token_id": target_tok,
                     "target_token": tokenizer.decode([target_tok]) if target_tok else None,
                     "correct": correct,
+                    **commit_extras,
                 }
                 print(f"  COMMITTED at step {i}: {repr(committed_str)} "
                       f"(target: {repr(tokenizer.decode([target_tok])) if target_tok else 'N/A'}, "
@@ -219,6 +251,28 @@ def run_critical_position(
             metrics["kl_from_prev"] = step_kl
             metrics["cumulative_kl"] = cumulative_kl
             prev_probs = current_probs
+
+            # Rename target_prob -> p_target, extract top5 ids/probs
+            metrics["p_target"] = metrics.pop("target_prob", None)
+            if metrics.get("top_k"):
+                metrics["top5_ids"] = [t[0] for t in metrics["top_k"]]
+                metrics["top5_probs"] = [t[2] for t in metrics["top_k"]]
+
+            # Sampler-based metrics (staggered_score * transp_transition)
+            stag_score = graph.staggered_score(raw_score, curr_sigma)
+            transp_trans = graph.transp_transition(x, curr_sigma)
+            sampler_probs = stag_score[0, frontier] * transp_trans[0, frontier]
+            if graph.absorb:
+                sampler_probs = sampler_probs[:-1]
+            sampler_sum = sampler_probs.sum().clamp(min=1e-30)
+            sp = sampler_probs / sampler_sum
+            sp_log2 = torch.log2(sp.clamp(min=1e-30))
+            sampler_entropy = -(sp * sp_log2).sum().item()
+            if np.isnan(sampler_entropy):
+                sampler_entropy = 0.0
+            sampler_p_target = sp[target_tok].item() if target_tok is not None else None
+            metrics["sampler_entropy"] = sampler_entropy
+            metrics["sampler_p_target"] = sampler_p_target
 
             frontier_history.append({
                 "step": i,
@@ -297,6 +351,8 @@ def run_critical_position(
             "committed_token": committed_str,
             "final_surprisal": frontier_history[-1]["surprisal"] if frontier_history else None,
             "final_entropy": frontier_history[-1]["entropy"] if frontier_history else None,
+            "final_sampler_entropy": frontier_history[-1].get("sampler_entropy") if frontier_history else None,
+            "final_sampler_p_target": frontier_history[-1].get("sampler_p_target") if frontier_history else None,
             "cumulative_kl": cumulative_kl,
             "target_token_id": target_tok,
             "target_token": tokenizer.decode([target_tok]) if target_tok else None,
@@ -304,13 +360,17 @@ def run_critical_position(
         }
         print(f"  COMMITTED (final denoiser): {repr(committed_str)}")
 
-    # Serialize frontier_history (remove probs, format top_k)
+    # Serialize frontier_history (remove probs tensor, format top_k)
     serializable_history = []
     for h in frontier_history:
         sh = {k: v for k, v in h.items() if k != "probs"}
         if sh.get("top_k"):
             sh["top_k"] = [{"id": t[0], "token": t[1], "prob": t[2]} for t in sh["top_k"]]
         serializable_history.append(sh)
+
+    # Rename target_prob -> p_target in commitment_entry for consistency
+    if commitment_entry and "target_prob" in commitment_entry:
+        commitment_entry["p_target"] = commitment_entry.pop("target_prob")
 
     result = {
         "config": {
