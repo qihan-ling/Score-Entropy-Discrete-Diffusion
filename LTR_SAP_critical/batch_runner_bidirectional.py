@@ -67,8 +67,10 @@ def main():
     parser.add_argument("--subset", type=str, default=None, help="Process only this subset")
     parser.add_argument("--skip_existing", action="store_true")
     parser.add_argument("--pad_length", type=int, default=256)
-    parser.add_argument("--track_prefix_scores", action="store_true")
-    parser.add_argument("--track_token_groups", action="store_true")
+    parser.add_argument("--track_prefix_scores", default=True, action=argparse.BooleanOptionalAction,
+                        help="Track p(gt) at context positions (default: on)")
+    parser.add_argument("--track_token_groups", default=True, action=argparse.BooleanOptionalAction,
+                        help="Track syntactic/semantic group probabilities (default: on)")
     args = parser.parse_args()
 
     device = torch.device(args.device)

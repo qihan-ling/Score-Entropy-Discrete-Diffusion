@@ -75,7 +75,8 @@ def main():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--subset", type=str, default=None, help="Process only this subset")
     parser.add_argument("--skip_existing", action="store_true")
-    parser.add_argument("--track_token_groups", action="store_true")
+    parser.add_argument("--track_token_groups", default=True, action=argparse.BooleanOptionalAction,
+                        help="Track syntactic/semantic group probabilities (default: on)")
     args = parser.parse_args()
 
     device = torch.device(args.device)

@@ -1,5 +1,5 @@
 """
-Batch runner for critical-position experiment.
+Batch runner for critical-position experiment (enriched metrics).
 
 For experimental subsets (Agreement, ClassicGP, RelativeClause, AttachmentAmbiguity):
   Run 6 passes per item targeting [crit-2, crit-1, crit, crit+1, crit+2, crit+3].
@@ -7,7 +7,7 @@ For experimental subsets (Agreement, ClassicGP, RelativeClause, AttachmentAmbigu
 For filler subset:
   Run one pass per word position (all positions).
 
-Results saved to LTR_SAP_critical/{subset}/{condition}/item_{id}_pos_{offset}.json
+Results saved to LTR_SAP_critical/critical_position/{subset}/...
 
 Usage (on cloud cluster):
   python LTR_SAP_critical/batch_runner_critical_position.py \
@@ -38,7 +38,7 @@ sys.path.append(_repo_root)
 import torch
 from sedd_helpers import load_sedd_model
 
-RESULT_DIR = Path(__file__).resolve().parent
+RESULT_DIR = Path(__file__).resolve().parent / "critical_position"
 
 EXPERIMENTAL_OFFSETS = [-2, -1, 0, 1, 2, 3]
 
@@ -68,10 +68,13 @@ def main():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--subset", type=str, default=None, help="Process only this subset")
     parser.add_argument("--skip_existing", action="store_true")
-    parser.add_argument("--future_window", type=int, default=3)
-    parser.add_argument("--track_future_tokens", action="store_true")
-    parser.add_argument("--track_prefix_scores", action="store_true")
-    parser.add_argument("--track_token_groups", action="store_true")
+    parser.add_argument("--future_window", type=int, default=5)
+    parser.add_argument("--track_future_tokens", default=True, action=argparse.BooleanOptionalAction,
+                        help="Track future token unmasking (default: on)")
+    parser.add_argument("--track_prefix_scores", default=True, action=argparse.BooleanOptionalAction,
+                        help="Track p(gt) at prefix positions (default: on)")
+    parser.add_argument("--track_token_groups", default=True, action=argparse.BooleanOptionalAction,
+                        help="Track syntactic/semantic group probabilities (default: on)")
     args = parser.parse_args()
 
     device = torch.device(args.device)
