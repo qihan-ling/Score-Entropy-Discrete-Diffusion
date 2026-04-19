@@ -1,0 +1,281 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 14,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      5856,
+      262,
+      4466,
+      24462,
+      11,
+      28111,
+      1149,
+      1150,
+      262,
+      29488,
+      286,
+      262,
+      4640,
+      508,
+      13267,
+      2048,
+      2279,
+      287,
+      3200,
+      764
+    ],
+    "sentence": "During the budget negotiation, Janet charmed the assistants of the executive who decides almost everything in secret .",
+    "sentence_length": 21,
+    "prefix_len": 16,
+    "frontier_start": 16
+  },
+  "commitment_log": {
+    "position": 16,
+    "word_position": 14,
+    "word": "almost",
+    "step": 3,
+    "steps_taken": 3,
+    "t_commitment": 0.9970703125,
+    "committed_token_id": 644,
+    "committed_token": " what",
+    "final_surprisal": 24.16866598227792,
+    "final_entropy": 0.03555012121796608,
+    "cumulative_kl": 0.0008139729616232216,
+    "target_token_id": 2048,
+    "target_token": " almost",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 25.4286580688436,
+      "entropy": 0.013504451140761375,
+      "target_prob": 2.2141710687151317e-08,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9991976505072335
+        },
+        {
+          "id": 319,
+          "token": " on",
+          "prob": 0.00021641715745953946
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 0.0001397294333807227
+        },
+        {
+          "id": 508,
+          "token": " who",
+          "prob": 5.8247890483208235e-05
+        },
+        {
+          "id": 644,
+          "token": " what",
+          "prob": 4.003314706528106e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 24.528172247483248,
+      "entropy": 0.02517486922442913,
+      "target_prob": 4.1331809086386784e-08,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9983678321302135
+        },
+        {
+          "id": 319,
+          "token": " on",
+          "prob": 0.00044369042095223797
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 0.0003678322806090834
+        },
+        {
+          "id": 508,
+          "token": " who",
+          "prob": 0.00012320837623163128
+        },
+        {
+          "id": 644,
+          "token": " what",
+          "prob": 9.59547826133099e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0005285841762088239,
+      "cumulative_kl": 0.0005285841762088239
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 24.16866598227792,
+      "entropy": 0.03555012121796608,
+      "target_prob": 5.3028163193857836e-08,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9975602690601304
+        },
+        {
+          "id": 319,
+          "token": " on",
+          "prob": 0.0006655194461248282
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 0.0006655194461248282
+        },
+        {
+          "id": 508,
+          "token": " who",
+          "prob": 0.0001580747171121436
+        },
+        {
+          "id": 644,
+          "token": " what",
+          "prob": 0.0001395004592816386
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0002853887854143977,
+      "cumulative_kl": 0.0008139729616232216
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "17": {
+          "target_token_id": 2279,
+          "target_token": " everything",
+          "target_prob": 9.922348453983432e-08,
+          "surprisal": 23.264743136276028,
+          "entropy": 0.019189272075891495,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.999109227905809
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 8.474267798471553e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 2.14263055211482e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 2.012815150458072e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 1.776303281184084e-05
+            }
+          ]
+        },
+        "18": {
+          "target_token_id": 287,
+          "target_token": " in",
+          "target_prob": 8.931528100220021e-06,
+          "surprisal": 16.77266154134531,
+          "entropy": 0.0198885016143322,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990773377257155
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 5.82408768901338e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 4.2609933410558066e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.318464934314317e-05
+            },
+            {
+              "id": 13,
+              "token": ".",
+              "prob": 2.928535215729865e-05
+            }
+          ]
+        },
+        "19": {
+          "target_token_id": 3200,
+          "target_token": " secret",
+          "target_prob": 8.756062896964067e-08,
+          "surprisal": 23.44514244130774,
+          "entropy": 0.020559757947921753,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990660338595477
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 5.4711621260649965e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 3.117374358173692e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 2.928502081387912e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 2.280719785861417e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

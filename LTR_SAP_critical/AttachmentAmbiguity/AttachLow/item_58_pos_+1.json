@@ -1,0 +1,203 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 10,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      15415,
+      8018,
+      262,
+      31331,
+      286,
+      262,
+      25868,
+      508,
+      373,
+      319,
+      3195,
+      428,
+      3329,
+      319,
+      262,
+      1957,
+      1705,
+      764
+    ],
+    "sentence": "Karl recognized the hostages of the pirate who was on TV this morning on the local news .",
+    "sentence_length": 19,
+    "prefix_len": 10,
+    "frontier_start": 10
+  },
+  "commitment_log": {
+    "position": 10,
+    "word_position": 10,
+    "word": "on",
+    "step": 1,
+    "steps_taken": 1,
+    "t_commitment": 0.9990234375,
+    "committed_token_id": 2923,
+    "committed_token": " killed",
+    "final_surprisal": 17.85417899598704,
+    "final_entropy": 0.012153198942542076,
+    "cumulative_kl": 0.0,
+    "target_token_id": 319,
+    "target_token": " on",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 17.85417899598704,
+      "entropy": 0.012153198942542076,
+      "target_prob": 4.220428763801465e-06,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9994263365494626
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 7.027645161593339e-05
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 3.5337218167911055e-05
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 2.1433106045547882e-05
+        },
+        {
+          "id": 281,
+          "token": " an",
+          "prob": 1.6692119432684265e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "11": {
+          "target_token_id": 3195,
+          "target_token": " TV",
+          "target_prob": 2.5338181330880616e-07,
+          "surprisal": 21.912183686657812,
+          "entropy": 0.019545603543519974,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991319568512997
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 4.003051502967938e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 2.7512548115862946e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 2.2808702782878793e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 2.1426792952668853e-05
+            }
+          ]
+        },
+        "12": {
+          "target_token_id": 428,
+          "target_token": " this",
+          "target_prob": 3.4976321785507025e-06,
+          "surprisal": 18.125189990208245,
+          "entropy": 0.020710516721010208,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.999076028843907
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 5.139732846924491e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 3.7603086688271225e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.117405545409466e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 1.8908019461443015e-05
+            }
+          ]
+        },
+        "13": {
+          "target_token_id": 3329,
+          "target_token": " morning",
+          "target_prob": 1.1968370472459355e-07,
+          "surprisal": 22.994269925575587,
+          "entropy": 0.020504925400018692,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990870949527249
+            },
+            {
+              "id": 373,
+              "token": " was",
+              "prob": 4.002871762454901e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.31849734323249e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.751131277839361e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 2.5844486027251877e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
