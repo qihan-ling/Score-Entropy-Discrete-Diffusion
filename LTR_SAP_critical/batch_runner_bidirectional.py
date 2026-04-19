@@ -1,5 +1,5 @@
 """
-Batch runner for critical-position experiment.
+Batch runner for bidirectional baseline experiment.
 
 For experimental subsets (Agreement, ClassicGP, RelativeClause, AttachmentAmbiguity):
   Run 6 passes per item targeting [crit-2, crit-1, crit, crit+1, crit+2, crit+3].
@@ -7,14 +7,14 @@ For experimental subsets (Agreement, ClassicGP, RelativeClause, AttachmentAmbigu
 For filler subset:
   Run one pass per word position (all positions).
 
-Results saved to LTR_SAP_critical/{subset}/{condition}/item_{id}_pos_{offset}.json
+Results saved to LTR_SAP_critical/bidirectional/{subset}/{condition}/item_{id}_pos_{offset}.json
 
 Usage (on cloud cluster):
-  python LTR_SAP_critical/batch_runner_critical_position.py \
+  python LTR_SAP_critical/batch_runner_bidirectional.py \
       --model_path louaaron/sedd-medium --steps 1024
 
   # Single subset:
-  python LTR_SAP_critical/batch_runner_critical_position.py \
+  python LTR_SAP_critical/batch_runner_bidirectional.py \
       --model_path louaaron/sedd-medium --subset Agreement
 """
 
@@ -32,19 +32,18 @@ sys.path.insert(0, _analysis_dir)
 from utils import get_sap_files, get_subset_name, get_critical_pos_col, load_sap_csv
 
 sys.path.insert(0, _this_dir)
-from transformer_critical_position import run_critical_position
+from transformer_bidirectional_baseline import run_bidirectional_baseline
 
 sys.path.append(_repo_root)
 import torch
 from sedd_helpers import load_sedd_model
 
-RESULT_DIR = Path(__file__).resolve().parent
+RESULT_DIR = Path(__file__).resolve().parent / "bidirectional"
 
 EXPERIMENTAL_OFFSETS = [-2, -1, 0, 1, 2, 3]
 
 
-def get_critical_output_path(subset, condition, item_id, offset):
-    """Get output path for a critical-position run."""
+def get_output_path(subset, condition, item_id, offset):
     if condition:
         d = RESULT_DIR / subset / condition
     else:
@@ -53,23 +52,21 @@ def get_critical_output_path(subset, condition, item_id, offset):
     return d / f"item_{item_id}_pos_{offset:+d}.json"
 
 
-def get_filler_output_path(subset, item_id, word_pos):
-    """Get output path for a filler per-position run."""
-    d = RESULT_DIR / subset
+def get_filler_output_path(item_id, word_pos):
+    d = RESULT_DIR / "filler"
     d.mkdir(parents=True, exist_ok=True)
     return d / f"item_{item_id}_wpos_{word_pos}.json"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Batch critical-position experiment")
+    parser = argparse.ArgumentParser(description="Batch bidirectional baseline experiment")
     parser.add_argument("--model_path", type=str, default="louaaron/sedd-medium")
     parser.add_argument("--steps", type=int, default=1024)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--subset", type=str, default=None, help="Process only this subset")
     parser.add_argument("--skip_existing", action="store_true")
-    parser.add_argument("--future_window", type=int, default=3)
-    parser.add_argument("--track_future_tokens", action="store_true")
+    parser.add_argument("--pad_length", type=int, default=256)
     parser.add_argument("--track_prefix_scores", action="store_true")
     parser.add_argument("--track_token_groups", action="store_true")
     args = parser.parse_args()
@@ -97,6 +94,7 @@ def main():
 
         print(f"\n{'='*70}")
         print(f"Subset: {subset} ({'filler - all positions' if is_filler else f'critical window [{EXPERIMENTAL_OFFSETS[0]:+d}..{EXPERIMENTAL_OFFSETS[-1]:+d}]'})")
+        print(f"  Experiment: bidirectional_baseline (full sentence context)")
         print(f"{'='*70}\n")
 
         df = load_sap_csv(csv_path)
@@ -111,19 +109,18 @@ def main():
             condition = row[cond_col] if cond_col else None
 
             if is_filler:
-                # Filler: one pass per word position (1-indexed)
                 for wpos in range(1, n_words + 1):
                     total_runs += 1
-                    out_path = get_filler_output_path(subset, item_id, wpos)
+                    out_path = get_filler_output_path(item_id, wpos)
 
                     if args.skip_existing and out_path.exists():
                         skipped += 1
                         continue
 
-                    print(f"  [{subset}] item={item_id} wpos={wpos}/{n_words}")
+                    print(f"  [filler] item={item_id} wpos={wpos}/{n_words}")
                     try:
                         t0 = time.time()
-                        run_critical_position(
+                        run_bidirectional_baseline(
                             sentence=sentence,
                             target_word_position=wpos,
                             steps=args.steps,
@@ -131,8 +128,7 @@ def main():
                             seed=args.seed,
                             output_path=str(out_path),
                             model_bundle=model_bundle,
-                            future_window=args.future_window,
-                            track_future_tokens=args.track_future_tokens,
+                            pad_length=args.pad_length,
                             track_prefix_scores=args.track_prefix_scores,
                             track_token_groups=args.track_token_groups,
                         )
@@ -140,10 +136,9 @@ def main():
                         processed += 1
                         print(f"    -> saved ({elapsed:.1f}s)\n")
                     except Exception as e:
-                        errors.append((subset, item_id, wpos, str(e)))
+                        errors.append(("filler", item_id, wpos, str(e)))
                         print(f"    -> ERROR: {e}\n")
             else:
-                # Experimental: 6 passes around critical position
                 crit_pos = int(row[crit_col])
 
                 for offset in EXPERIMENTAL_OFFSETS:
@@ -152,7 +147,7 @@ def main():
                         continue
 
                     total_runs += 1
-                    out_path = get_critical_output_path(subset, condition, item_id, offset)
+                    out_path = get_output_path(subset, condition, item_id, offset)
 
                     if args.skip_existing and out_path.exists():
                         skipped += 1
@@ -162,7 +157,7 @@ def main():
                           f"crit={crit_pos} offset={offset:+d} -> wpos={target_wpos}")
                     try:
                         t0 = time.time()
-                        run_critical_position(
+                        run_bidirectional_baseline(
                             sentence=sentence,
                             target_word_position=target_wpos,
                             steps=args.steps,
@@ -170,8 +165,7 @@ def main():
                             seed=args.seed,
                             output_path=str(out_path),
                             model_bundle=model_bundle,
-                            future_window=args.future_window,
-                            track_future_tokens=args.track_future_tokens,
+                            pad_length=args.pad_length,
                             track_prefix_scores=args.track_prefix_scores,
                             track_token_groups=args.track_token_groups,
                         )

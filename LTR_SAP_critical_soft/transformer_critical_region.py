@@ -102,7 +102,8 @@ def _compute_raw_metrics(raw_score, pos, target_tok_id, prev_probs_raw):
     }, p
 
 
-def _compute_sampler_metrics(stag_score, transp_trans, pos, target_tok_id, graph):
+def _compute_sampler_metrics(stag_score, transp_trans, pos, target_tok_id, graph,
+                             prev_sampler_probs=None):
     """Compute P_sampler-based metrics at one position.
 
     Args:
@@ -111,8 +112,9 @@ def _compute_sampler_metrics(stag_score, transp_trans, pos, target_tok_id, graph
         pos: frontier position
         target_tok_id: ground-truth token id
         graph: the absorbing graph
+        prev_sampler_probs: previous step's sampler distribution for KL
 
-    Returns dict with sampler_entropy, sampler_p_target.
+    Returns (dict, sampler_probs_tensor).
     """
     probs = stag_score[0, pos] * transp_trans[0, pos]
     if graph.absorb:
@@ -127,10 +129,16 @@ def _compute_sampler_metrics(stag_score, transp_trans, pos, target_tok_id, graph
 
     p_target = p[target_tok_id].item() if target_tok_id is not None else None
 
+    if prev_sampler_probs is not None:
+        kl = compute_kl_divergence(p, prev_sampler_probs)
+    else:
+        kl = 0.0
+
     return {
         "sampler_entropy": entropy,
         "sampler_p_target": p_target,
-    }
+        "sampler_kl_from_prev": kl,
+    }, p
 
 
 def _compute_commitment_details(stag_score, transp_trans, raw_score, pos, graph, vocab_size):
@@ -179,6 +187,7 @@ def run_critical_region(
     output_path=None,
     model_path="louaaron/sedd-medium",
     model_bundle=None,
+    track_token_groups=False,
 ):
     """Run sequential rescheduling with soft context over a 6-token critical window.
 
@@ -209,6 +218,12 @@ def run_critical_region(
     MASK = graph.dim - 1
     vocab_size = graph.dim - 1 if graph.absorb else graph.dim
     eps = 1e-5
+
+    group_tracker = None
+    if track_token_groups:
+        sys.path.insert(0, os.path.join(_repo_root, "LTR_SAP_critical"))
+        from token_group_utils import TokenGroupTracker
+        group_tracker = TokenGroupTracker(tokenizer, model, device)
 
     full_ids = tokenize_sentence(tokenizer, sentence)
     words = sentence.split()
@@ -281,6 +296,8 @@ def run_critical_region(
         commitment_entry = None
         prev_probs_raw = None
         cumulative_kl = 0.0
+        prev_sampler_probs = None
+        sampler_cumulative_kl = 0.0
 
         with torch.no_grad():
             for i in range(steps):
@@ -329,6 +346,7 @@ def run_critical_region(
                         "final_sampler_entropy": frontier_history[-1].get("sampler_entropy") if frontier_history else None,
                         "final_sampler_p_target": frontier_history[-1].get("sampler_p_target") if frontier_history else None,
                         "cumulative_kl": cumulative_kl,
+                        "sampler_cumulative_kl": sampler_cumulative_kl,
                         "target_token_id": target_tok,
                         "target_token": tokenizer.decode([target_tok]) if target_tok else None,
                         "correct": correct,
@@ -353,15 +371,24 @@ def run_critical_region(
 
                 stag_score = graph.staggered_score(raw_score, curr_sigma)
                 transp_trans = graph.transp_transition(x, curr_sigma)
-                sampler_metrics = _compute_sampler_metrics(
-                    stag_score, transp_trans, frontier, target_tok, graph
+                sampler_metrics, current_sampler_probs = _compute_sampler_metrics(
+                    stag_score, transp_trans, frontier, target_tok, graph,
+                    prev_sampler_probs=prev_sampler_probs,
                 )
+                sampler_cumulative_kl += sampler_metrics["sampler_kl_from_prev"]
+                sampler_metrics["sampler_cumulative_kl"] = sampler_cumulative_kl
+                prev_sampler_probs = current_sampler_probs
+
+                group_metrics = {}
+                if group_tracker is not None:
+                    group_metrics = group_tracker.compute_group_metrics(current_probs, target_tok)
 
                 frontier_history.append({
                     "step": i,
                     "t": timesteps[i].item(),
                     **raw_metrics,
                     **sampler_metrics,
+                    **group_metrics,
                 })
 
                 # Core predictor step
@@ -413,6 +440,7 @@ def run_critical_region(
                 "final_sampler_entropy": frontier_history[-1].get("sampler_entropy") if frontier_history else None,
                 "final_sampler_p_target": frontier_history[-1].get("sampler_p_target") if frontier_history else None,
                 "cumulative_kl": cumulative_kl,
+                "sampler_cumulative_kl": sampler_cumulative_kl,
                 "target_token_id": target_tok,
                 "target_token": tokenizer.decode([target_tok]) if target_tok else None,
                 "correct": correct,
@@ -469,6 +497,7 @@ def run_critical_region(
             "experiment_type": "critical_region_soft_context",
             "crit_word_pos": crit_word_pos,
             "window_offsets": [o for o, _ in target_word_positions],
+            "track_token_groups": track_token_groups,
         },
         "tokenization": {
             "full_ids": full_ids,
@@ -506,6 +535,8 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--output_path", type=str, default=None)
+    parser.add_argument("--track_token_groups", action="store_true",
+                        help="Track syntactic/semantic group probabilities per step")
 
     args = parser.parse_args()
     device = torch.device(args.device)
@@ -520,6 +551,7 @@ def main():
         seed=args.seed,
         output_path=args.output_path,
         model_path=args.model_path,
+        track_token_groups=args.track_token_groups,
     )
 
 

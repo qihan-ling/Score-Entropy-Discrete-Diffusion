@@ -1,27 +1,31 @@
 """
-Critical-position denoising: run a single denoising pass targeting one position.
+Bidirectional-context baseline: cloze-style denoising for one target position.
 
-Unlike strict-LTR which processes all positions sequentially (causing a position
-confound where later positions get fewer steps), this script gives each target
-position the FULL noise schedule (all --steps steps from t=1 to t=eps).
+All sentence tokens are revealed EXCEPT the target position, which starts as MASK.
+The model runs the full 1024-step denoising schedule to unmask just that one position.
+
+This isolates position-level linguistic difficulty from the effect of limited context.
+Comparison with the unidirectional critical-position results reveals the "value of
+right context".
 
 Input construction for target position k:
-  [<|endoftext|>, token_1, ..., token_{k-1}, MASK, MASK, ..., MASK]
+  [<eot>, tok_1, ..., tok_{k-1}, MASK, tok_{k+1}, ..., tok_N, MASK_pad, ..., MASK_pad]
 
-All tokens before k are given as correct prefix. Position k denoises from step 0.
-LTR is enforced (future positions stay MASK), but we also record the model's
-score distribution at future positions (soft view without commitment).
+- All sentence positions (except target): ground-truth tokens (hard)
+- Pad to fixed length (default 256) with MASK
+- Only the target position can change; sentence context and padding stay fixed
 
 Usage:
-  python LTR_SAP_critical/transformer_critical_position.py \
+  python LTR_SAP_critical/transformer_bidirectional_baseline.py \
       --sentence "If the supervisor changes, the schedule deserves further inspection ." \
       --target_position 7 \
-      --output_path LTR_SAP_critical/test.json
+      --output_path LTR_SAP_critical/bidirectional/test.json
 """
 
 import argparse
 import json
 import os
+import re
 import sys
 
 import torch
@@ -40,7 +44,7 @@ from sampling import get_predictor, Denoiser
 import torch.nn.functional as F
 
 
-def run_critical_position(
+def run_bidirectional_baseline(
     sentence,
     target_word_position,
     steps,
@@ -49,28 +53,23 @@ def run_critical_position(
     output_path=None,
     model_path="louaaron/sedd-medium",
     model_bundle=None,
-    future_topk=5,
-    future_window=3,
-    track_future_tokens=False,
+    pad_length=256,
     track_prefix_scores=False,
     track_token_groups=False,
 ):
-    """Run a single critical-position denoising pass.
+    """Run a bidirectional cloze-style denoising pass for one target position.
 
     Args:
         sentence: full sentence string
-        target_word_position: 1-indexed word position to target (matches SAP CSV convention)
-        steps: number of denoising steps (e.g. 1024)
+        target_word_position: 1-indexed word position to target
+        steps: number of denoising steps
         device: torch device
         seed: random seed
         output_path: path to save JSON results
         model_path: HuggingFace model path
-        model_bundle: optional (model, graph, noise, tokenizer) to avoid reloading
-        future_topk: number of top-K tokens to track at future positions
-        future_window: how many future positions to track scores for
-
-    Returns:
-        dict with commitment_log, frontier_history, future_scores
+        model_bundle: optional pre-loaded (model, graph, noise, tokenizer)
+        pad_length: total sequence length to pad to
+        track_prefix_scores: log p(gt) at sentence positions to measure context usage
     """
     torch.manual_seed(seed)
     if device.type == "cuda":
@@ -87,20 +86,15 @@ def run_critical_position(
     full_ids = tokenize_sentence(tokenizer, sentence)
     words = sentence.split()
 
-    # Convert 1-indexed word position to token position
-    # Token position 0 = <|endoftext|>, token positions 1..N = sentence tokens
-    # We need to find which token(s) correspond to word at target_word_position
+    # Word-to-token mapping
     sentence_tokens = tokenizer.tokenize(sentence)
 
-    # Build word-to-token mapping
-    import re
     def _clean(token):
         return re.sub(r"[^a-zA-Z0-9*.,!?\\-]", "", token)
 
     cleaned = [_clean(t) for t in sentence_tokens]
     breaks = []
     idx_word = 0
-    current_pieces = []
 
     for idx_piece, piece in enumerate(cleaned):
         if idx_word < len(words):
@@ -111,39 +105,38 @@ def run_critical_position(
             breaks.append(idx_piece)
             idx_word += 1
 
-    # breaks[i] = token index (0-indexed within sentence_tokens) of word i's first token
-    # Token position in full_ids = breaks[i] + 1 (for <|endoftext|> prefix)
-    target_word_0idx = target_word_position - 1  # convert to 0-indexed
+    target_word_0idx = target_word_position - 1
     if target_word_0idx < 0 or target_word_0idx >= len(breaks):
         raise ValueError(
             f"target_word_position {target_word_position} out of range "
             f"(sentence has {len(words)} words)"
         )
 
-    # First token of the target word in full_ids
-    frontier_start = breaks[target_word_0idx] + 1  # +1 for <|endoftext|>
-
-    # Build prefix: all tokens before the target word's first token
-    prefix_ids = full_ids[:frontier_start]
-    prefix_len = len(prefix_ids)
-
-    # Target token at the frontier position
-    target_tok = full_ids[frontier_start] if frontier_start < len(full_ids) else None
+    frontier = breaks[target_word_0idx] + 1  # +1 for <|endoftext|>
     sentence_end = len(full_ids)
+    target_tok = full_ids[frontier] if frontier < len(full_ids) else None
 
-    # Determine future positions to track (within sentence bounds)
-    future_positions = []
-    for offset in range(1, future_window + 1):
-        fpos = frontier_start + offset
-        if fpos < sentence_end:
-            future_positions.append(fpos)
+    # Build the bidirectional input:
+    #   [<eot>, tok_1, ..., MASK, tok_{k+1}, ..., tok_N, MASK_pad, ..., MASK_pad]
+    bidir_ids = list(full_ids)
+    bidir_ids[frontier] = MASK
+
+    # Pad to pad_length
+    if len(bidir_ids) < pad_length:
+        bidir_ids.extend([MASK] * (pad_length - len(bidir_ids)))
+    else:
+        bidir_ids = bidir_ids[:pad_length]
+
+    # Positions that must stay fixed: all sentence positions except target, plus padding
+    fixed_sentence = list(range(0, frontier)) + list(range(frontier + 1, sentence_end))
 
     print(f"  sentence:        {repr(sentence)}")
     print(f"  target word:     {repr(words[target_word_0idx])} (word_pos={target_word_position})")
-    print(f"  frontier_start:  token position {frontier_start}")
-    print(f"  prefix_len:      {prefix_len} tokens")
+    print(f"  target position: token position {frontier}")
     print(f"  target_token:    {repr(tokenizer.decode([target_tok])) if target_tok else 'N/A'}")
-    print(f"  future tracking: positions {future_positions}")
+    print(f"  sentence_end:    {sentence_end} tokens")
+    print(f"  pad_length:      {pad_length}")
+    print(f"  experiment:      bidirectional_baseline")
     print()
 
     group_tracker = None
@@ -154,15 +147,11 @@ def run_critical_position(
     score_fn = get_sampling_score_fn(model)
     predictor = get_predictor("analytic")(graph, noise)
 
-    x = graph.sample_limit(1, 1024).to(device)
+    x = torch.tensor([bidir_ids], dtype=torch.long, device=device)
     timesteps = torch.linspace(1, eps, steps + 1, device=device)
     dt = (1 - eps) / steps
 
-    frontier = frontier_start
-
     frontier_history = []
-    future_scores_log = []
-    future_tokens_log = []
     prefix_scores_log = []
     commitment_entry = None
     prev_probs = None
@@ -170,30 +159,31 @@ def run_critical_position(
     prev_sampler_probs = None
     sampler_cumulative_kl = 0.0
 
-    print(f"Sampling loop ({steps} steps, frontier at position {frontier})...\n")
+    print(f"Sampling loop ({steps} steps, target at position {frontier})...\n")
 
     with torch.no_grad():
         for i in range(steps):
             t = timesteps[i] * torch.ones(x.shape[0], 1, device=device)
 
-            # Fix prefix tokens
-            x[:, :prefix_len] = torch.tensor(prefix_ids, device=device)[None]
+            # Re-enforce context: fix all sentence positions except target
+            for pos in fixed_sentence:
+                if pos < len(full_ids):
+                    x[:, pos] = full_ids[pos]
+            # Fix padding
+            x[:, sentence_end:] = MASK
 
-            # LTR enforcement: mask everything after frontier
-            if frontier < 1024:
-                x[:, frontier + 1:] = MASK
-
-            # Check if frontier already committed
+            # Check if target already committed
             if x[0, frontier].item() != MASK:
                 committed_token = x[0, frontier].item()
                 committed_str = tokenizer.decode([committed_token])
                 correct = (committed_token == target_tok) if target_tok is not None else None
 
-                # Compute commitment-time details from both distributions
                 commit_extras = {}
                 curr_sigma_c = noise(t)[0]
                 with torch.amp.autocast("cuda", dtype=torch.bfloat16):
                     raw_score_c = score_fn(x, curr_sigma_c)
+
+                # Sampler distribution at commitment
                 stag_c = graph.staggered_score(raw_score_c, curr_sigma_c)
                 tt_c = graph.transp_transition(x, curr_sigma_c)
                 s_probs = stag_c[0, frontier] * tt_c[0, frontier]
@@ -206,6 +196,7 @@ def run_critical_position(
                 commit_extras["top50_ids"] = s_ids.tolist()
                 commit_extras["top50_probs"] = s_vals.tolist()
 
+                # Raw score distribution at commitment
                 r_probs = raw_score_c[0, frontier]
                 r_sum = r_probs.sum().clamp(min=1e-30)
                 r_p = r_probs / r_sum
@@ -242,7 +233,7 @@ def run_critical_position(
                       f"correct: {correct})")
                 break
 
-            # Compute scores at frontier
+            # Compute scores at target position
             curr_sigma = noise(t)[0]
             with torch.amp.autocast("cuda", dtype=torch.bfloat16):
                 raw_score = score_fn(x, curr_sigma)
@@ -265,13 +256,12 @@ def run_critical_position(
             metrics["cumulative_kl"] = cumulative_kl
             prev_probs = current_probs
 
-            # Rename target_prob -> p_target, extract top5 ids/probs
             metrics["p_target"] = metrics.pop("target_prob", None)
             if metrics.get("top_k"):
                 metrics["top5_ids"] = [t[0] for t in metrics["top_k"]]
                 metrics["top5_probs"] = [t[2] for t in metrics["top_k"]]
 
-            # Sampler-based metrics (staggered_score * transp_transition)
+            # Sampler-based metrics
             stag_score = graph.staggered_score(raw_score, curr_sigma)
             transp_trans = graph.transp_transition(x, curr_sigma)
             sampler_probs = stag_score[0, frontier] * transp_trans[0, frontier]
@@ -306,42 +296,13 @@ def run_critical_position(
                 **metrics,
             })
 
-            # Track future position scores (soft view)
-            if future_positions and i % max(1, steps // 100) == 0:
-                future_step_entry = {"step": i, "t": timesteps[i].item(), "positions": {}}
-                for fpos in future_positions:
-                    fpos_target = full_ids[fpos] if fpos < len(full_ids) else None
-                    if fpos_target is not None:
-                        fprobs = raw_score[0, fpos]
-                        fprobs_sum = fprobs.sum()
-                        fp = fprobs / fprobs_sum.clamp(min=1e-30)
-
-                        ftopk_vals, ftopk_ids = fprobs.topk(min(future_topk, fprobs.shape[0]))
-                        ftop_k = []
-                        for val, tid in zip(ftopk_vals, ftopk_ids):
-                            prob = val.item() / fprobs_sum.item() if fprobs_sum.item() > 0 else 0.0
-                            ftop_k.append({
-                                "id": tid.item(),
-                                "token": tokenizer.decode([tid.item()]),
-                                "prob": prob,
-                            })
-
-                        target_p = fp[fpos_target].item()
-                        future_step_entry["positions"][str(fpos)] = {
-                            "target_token_id": fpos_target,
-                            "target_token": tokenizer.decode([fpos_target]),
-                            "target_prob": target_p,
-                            "surprisal": -np.log2(max(target_p, 1e-30)),
-                            "entropy": -(fp * torch.log2(fp.clamp(min=1e-30))).sum().item(),
-                            "top_k": ftop_k,
-                        }
-                future_scores_log.append(future_step_entry)
-
-            # Prefix score probing: how well does the model "remember" prefix tokens?
+            # Prefix score probing
             if track_prefix_scores and i % max(1, steps // 100) == 0:
                 prefix_entry = {"step": i, "t": timesteps[i].item(), "positions": {}}
-                for ppos in range(1, prefix_len):
-                    gt_tok = prefix_ids[ppos]
+                for ppos in fixed_sentence:
+                    if ppos >= sentence_end or ppos == 0:
+                        continue
+                    gt_tok = full_ids[ppos]
                     p_probs = raw_score[0, ppos]
                     p_sum = p_probs.sum().clamp(min=1e-30)
                     p_gt = (p_probs[gt_tok] / p_sum).item()
@@ -354,46 +315,35 @@ def run_critical_position(
             # Core predictor step
             x = predictor.update_fn(score_fn, x, t, dt)
 
-            # Future token tracking: snapshot which positions got unmasked by predictor
-            if track_future_tokens:
-                unmasked_futures = []
-                for fpos in range(frontier + 1, min(frontier + future_window + 1, sentence_end)):
-                    tok_val = x[0, fpos].item()
-                    if tok_val != MASK:
-                        unmasked_futures.append({
-                            "position": fpos,
-                            "token_id": tok_val,
-                            "token": tokenizer.decode([tok_val]),
-                            "is_correct": tok_val == (full_ids[fpos] if fpos < len(full_ids) else -1),
-                        })
-                if unmasked_futures:
-                    future_tokens_log.append({
-                        "step": i,
-                        "t": timesteps[i].item(),
-                        "tokens": unmasked_futures,
-                    })
-
-            # Re-enforce prefix and LTR
-            x[:, :prefix_len] = torch.tensor(prefix_ids, device=device)[None]
-            if frontier < 1024:
-                x[:, frontier + 1:] = MASK
+            # Re-enforce context and padding after predictor
+            for pos in fixed_sentence:
+                if pos < len(full_ids):
+                    x[:, pos] = full_ids[pos]
+            x[:, sentence_end:] = MASK
 
             # Periodic logging
             if i < 5 or i % max(1, steps // 20) == 0 or i == steps - 1:
                 tok_val = x[0, frontier].item()
                 tok_str = "[MASK]" if tok_val == MASK else repr(tokenizer.decode([tok_val]))
-                print(f"  step {i:5d} | t={timesteps[i].item():.4f} | frontier={tok_str}")
+                print(f"  step {i:5d} | t={timesteps[i].item():.4f} | target={tok_str}")
 
-    # If never committed during the loop, run final denoiser
+    # Final denoiser if not committed during loop
     if commitment_entry is None:
-        print(f"\n  Running final denoiser step...")
+        print("\n  Running final denoiser step...")
         denoiser = Denoiser(graph, noise)
-        x[:, :prefix_len] = torch.tensor(prefix_ids, device=device)[None]
-        if frontier < 1024:
-            x[:, frontier + 1:] = MASK
-        t = timesteps[-1] * torch.ones(x.shape[0], 1, device=device)
-        x = denoiser.update_fn(score_fn, x, t)
-        x[:, :prefix_len] = torch.tensor(prefix_ids, device=device)[None]
+        t_final = timesteps[-1] * torch.ones(x.shape[0], 1, device=device)
+
+        for pos in fixed_sentence:
+            if pos < len(full_ids):
+                x[:, pos] = full_ids[pos]
+        x[:, sentence_end:] = MASK
+
+        x = denoiser.update_fn(score_fn, x, t_final, dt)
+
+        for pos in fixed_sentence:
+            if pos < len(full_ids):
+                x[:, pos] = full_ids[pos]
+        x[:, sentence_end:] = MASK
 
         committed_token = x[0, frontier].item()
         committed_str = tokenizer.decode([committed_token])
@@ -420,16 +370,19 @@ def run_critical_position(
         }
         print(f"  COMMITTED (final denoiser): {repr(committed_str)}")
 
-    # Serialize frontier_history (remove probs tensor, format top_k)
+    # Serialize frontier_history
     serializable_history = []
     for h in frontier_history:
         sh = {k: v for k, v in h.items() if k != "probs"}
         if sh.get("top_k"):
-            sh["top_k"] = [{"id": t[0], "token": t[1], "prob": t[2]} for t in sh["top_k"]]
+            sh["top_k"] = [
+                {"id": t[0], "token": t[1], "prob": t[2]}
+                if isinstance(t, (list, tuple)) else t
+                for t in sh["top_k"]
+            ]
         serializable_history.append(sh)
 
-    # Rename target_prob -> p_target in commitment_entry for consistency
-    if commitment_entry and "target_prob" in commitment_entry:
+    if commitment_entry.get("target_prob") is not None:
         commitment_entry["p_target"] = commitment_entry.pop("target_prob")
 
     result = {
@@ -437,10 +390,9 @@ def run_critical_position(
             "model_path": model_path,
             "steps": steps,
             "seed": seed,
-            "experiment_type": "critical_position",
+            "experiment_type": "bidirectional_baseline",
             "target_word_position": target_word_position,
-            "future_window": future_window,
-            "track_future_tokens": track_future_tokens,
+            "pad_length": pad_length,
             "track_prefix_scores": track_prefix_scores,
             "track_token_groups": track_token_groups,
         },
@@ -448,15 +400,11 @@ def run_critical_position(
             "full_ids": full_ids,
             "sentence": sentence,
             "sentence_length": len(full_ids),
-            "prefix_len": prefix_len,
-            "frontier_start": frontier_start,
+            "frontier": frontier,
         },
         "commitment_log": commitment_entry,
         "frontier_history": serializable_history,
-        "future_scores": future_scores_log,
     }
-    if track_future_tokens and future_tokens_log:
-        result["future_tokens_log"] = future_tokens_log
     if track_prefix_scores and prefix_scores_log:
         result["prefix_scores_log"] = prefix_scores_log
 
@@ -471,7 +419,7 @@ def run_critical_position(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Critical-position denoising: full noise schedule for one target position"
+        description="Bidirectional baseline: cloze-style denoising with full sentence context"
     )
     parser.add_argument("--model_path", type=str, default="louaaron/sedd-medium")
     parser.add_argument("--sentence", type=str, required=True)
@@ -481,21 +429,18 @@ def main():
     )
     parser.add_argument("--steps", type=int, default=1024)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--device", type=str,
+                        default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--output_path", type=str, default=None)
-    parser.add_argument("--future_window", type=int, default=3)
-    parser.add_argument("--future_topk", type=int, default=5)
-    parser.add_argument("--track_future_tokens", action="store_true",
-                        help="Track which tokens get unmasked at future positions before remasking")
-    parser.add_argument("--track_prefix_scores", action="store_true",
-                        help="Track p(gt) at prefix positions to measure model memory")
+    parser.add_argument("--pad_length", type=int, default=256)
+    parser.add_argument("--track_prefix_scores", action="store_true")
     parser.add_argument("--track_token_groups", action="store_true",
                         help="Track syntactic/semantic group probabilities per step")
 
     args = parser.parse_args()
     device = torch.device(args.device)
 
-    run_critical_position(
+    run_bidirectional_baseline(
         sentence=args.sentence,
         target_word_position=args.target_position,
         steps=args.steps,
@@ -503,9 +448,7 @@ def main():
         seed=args.seed,
         output_path=args.output_path,
         model_path=args.model_path,
-        future_topk=args.future_topk,
-        future_window=args.future_window,
-        track_future_tokens=args.track_future_tokens,
+        pad_length=args.pad_length,
         track_prefix_scores=args.track_prefix_scores,
         track_token_groups=args.track_token_groups,
     )

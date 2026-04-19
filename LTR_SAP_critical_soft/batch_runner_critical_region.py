@@ -75,6 +75,7 @@ def main():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--subset", type=str, default=None, help="Process only this subset")
     parser.add_argument("--skip_existing", action="store_true")
+    parser.add_argument("--track_token_groups", action="store_true")
     args = parser.parse_args()
 
     device = torch.device(args.device)
@@ -147,6 +148,7 @@ def main():
                             seed=args.seed,
                             output_path=str(out_path),
                             model_bundle=model_bundle,
+                            track_token_groups=args.track_token_groups,
                         )
                         elapsed = time.time() - t0
                         processed += 1
@@ -179,6 +181,7 @@ def main():
                         seed=args.seed,
                         output_path=str(out_path),
                         model_bundle=model_bundle,
+                        track_token_groups=args.track_token_groups,
                     )
                     elapsed = time.time() - t0
                     processed += 1
