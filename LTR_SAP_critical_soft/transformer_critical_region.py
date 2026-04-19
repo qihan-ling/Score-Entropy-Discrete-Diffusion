@@ -222,8 +222,8 @@ def run_critical_region(
     group_tracker = None
     if track_token_groups:
         sys.path.insert(0, os.path.join(_repo_root, "LTR_SAP_critical"))
-        from token_group_utils import TokenGroupTracker
-        group_tracker = TokenGroupTracker(tokenizer, model, device)
+        from token_group_utils import get_or_create_tracker
+        group_tracker = get_or_create_tracker(tokenizer, model, device)
 
     full_ids = tokenize_sentence(tokenizer, sentence)
     words = sentence.split()

@@ -13,12 +13,32 @@ Usage:
 
 import json
 import os
+import tempfile
 from pathlib import Path
 
 import torch
 import numpy as np
 
 CACHE_DIR = Path(__file__).resolve().parent / ".token_caches"
+
+
+def _atomic_write_json(data, target_path):
+    """Write a JSON file atomically (write to .tmp + rename) to avoid corruption
+    when multiple processes initialize TokenGroupTracker concurrently."""
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        prefix=target_path.name + ".",
+        suffix=".tmp",
+        dir=str(target_path.parent),
+    )
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f)
+        os.replace(tmp_path, target_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
 
 # Coarse POS categories
 POS_CATEGORIES = ["NOUN", "VERB", "ADJ", "ADV", "DET", "PREP", "CONJ", "PRON", "PUNCT", "NUM", "OTHER"]
@@ -73,9 +93,7 @@ def _build_pos_cache(tokenizer, cache_path):
         if token_id not in pos_map:
             pos_map[token_id] = "OTHER"
 
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(cache_path, "w") as f:
-        json.dump({str(k): v for k, v in pos_map.items()}, f)
+    _atomic_write_json({str(k): v for k, v in pos_map.items()}, cache_path)
 
     return pos_map
 
@@ -135,9 +153,7 @@ def _build_pos_cache_heuristic(tokenizer, cache_path):
         if token_id not in pos_map:
             pos_map[token_id] = "OTHER"
 
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(cache_path, "w") as f:
-        json.dump({str(k): v for k, v in pos_map.items()}, f)
+    _atomic_write_json({str(k): v for k, v in pos_map.items()}, cache_path)
 
     return pos_map
 
@@ -145,13 +161,34 @@ def _build_pos_cache_heuristic(tokenizer, cache_path):
 def _compute_embedding_neighbors(model, n_neighbors=50):
     """Compute pairwise cosine similarities from the model's embedding layer.
 
-    Returns a dict mapping each token_id to its top-N neighbor token_ids.
-    This is computed lazily and only for requested target tokens.
+    Returns the normalized embedding matrix; nearest-neighbor lookup is done
+    lazily per target token in TokenGroupTracker.get_semantic_neighbors.
     """
-    embed_weight = model.vocab_embed.embedding.weight.data.float()
+    embed = model.vocab_embed.embedding
+    if hasattr(embed, "weight"):
+        embed_tensor = embed.weight
+    else:
+        embed_tensor = embed
+    embed_weight = embed_tensor.data.float()
     norms = embed_weight.norm(dim=1, keepdim=True).clamp(min=1e-8)
     normalized = embed_weight / norms
     return normalized, n_neighbors
+
+
+_TRACKER_CACHE = {}
+
+
+def get_or_create_tracker(tokenizer, model, device, n_semantic_neighbors=50):
+    """Return a singleton TokenGroupTracker for this (model, device) pair.
+
+    Avoids re-tagging the vocab and re-normalizing the embedding matrix
+    on every call to run_critical_position.
+    """
+    key = (id(model), str(device))
+    if key not in _TRACKER_CACHE:
+        _TRACKER_CACHE[key] = TokenGroupTracker(tokenizer, model, device,
+                                                n_semantic_neighbors=n_semantic_neighbors)
+    return _TRACKER_CACHE[key]
 
 
 class TokenGroupTracker:
@@ -165,11 +202,19 @@ class TokenGroupTracker:
 
         # POS cache
         cache_path = CACHE_DIR / "pos_cache.json"
+        self.pos_map = None
         if cache_path.exists():
-            with open(cache_path) as f:
-                raw = json.load(f)
-            self.pos_map = {int(k): v for k, v in raw.items()}
-        else:
+            try:
+                with open(cache_path) as f:
+                    raw = json.load(f)
+                self.pos_map = {int(k): v for k, v in raw.items()}
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"WARNING: pos_cache.json is corrupted ({e}); rebuilding.")
+                try:
+                    cache_path.unlink()
+                except OSError:
+                    pass
+        if self.pos_map is None:
             self.pos_map = _build_pos_cache(tokenizer, cache_path)
 
         # Build POS group index: category -> list of token_ids

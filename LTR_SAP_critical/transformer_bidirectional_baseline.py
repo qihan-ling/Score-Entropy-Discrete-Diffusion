@@ -141,8 +141,8 @@ def run_bidirectional_baseline(
 
     group_tracker = None
     if track_token_groups:
-        from token_group_utils import TokenGroupTracker
-        group_tracker = TokenGroupTracker(tokenizer, model, device)
+        from token_group_utils import get_or_create_tracker
+        group_tracker = get_or_create_tracker(tokenizer, model, device)
 
     score_fn = get_sampling_score_fn(model)
     predictor = get_predictor("analytic")(graph, noise)
