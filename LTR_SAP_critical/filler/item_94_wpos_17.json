@@ -1,0 +1,326 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 17,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      22702,
+      7626,
+      2241,
+      2192,
+      1839,
+      1088,
+      2063,
+      257,
+      1510,
+      17717,
+      411,
+      11,
+      257,
+      1588,
+      15807,
+      11,
+      543,
+      339,
+      788,
+      925,
+      772,
+      4025,
+      13
+    ],
+    "sentence": "Voltaire himself probably won around half a million livres, a large fortune, which he then made even larger.",
+    "sentence_length": 24,
+    "prefix_len": 21,
+    "frontier_start": 21
+  },
+  "commitment_log": {
+    "position": 21,
+    "word_position": 17,
+    "word": "even",
+    "step": 5,
+    "steps_taken": 5,
+    "t_commitment": 0.9951172471046448,
+    "committed_token_id": 510,
+    "committed_token": " up",
+    "final_surprisal": 19.48163967081258,
+    "final_entropy": 0.06207127124071121,
+    "cumulative_kl": 0.001258575328392908,
+    "target_token_id": 772,
+    "target_token": " even",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 22.45294285921525,
+      "entropy": 0.0131948571652174,
+      "target_prob": 1.741769608543109e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9993062067808757
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 0.00017943562254550845
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 4.536843280416039e-05
+        },
+        {
+          "id": 286,
+          "token": " of",
+          "prob": 2.929206085804201e-05
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 1.3836590055295544e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 21.101491606225036,
+      "entropy": 0.026324693113565445,
+      "target_prob": 4.444450496521313e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9985616659391472
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 0.0002608827605948576
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00010875212736406148
+        },
+        {
+          "id": 1654,
+          "token": " sure",
+          "prob": 4.825846462664686e-05
+        },
+        {
+          "id": 286,
+          "token": " of",
+          "prob": 4.0007666156941734e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0006321526598185301,
+      "cumulative_kl": 0.0006321526598185301
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 20.29109956836242,
+      "entropy": 0.039390724152326584,
+      "target_prob": 7.794179168740811e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9977839335839032
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 0.00033471921675177785
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00015811015928783963
+        },
+        {
+          "id": 1654,
+          "token": " sure",
+          "prob": 8.463026886385129e-05
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 6.191682674262919e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0003059157752431929,
+      "cumulative_kl": 0.000938068435061723
+    },
+    {
+      "step": 3,
+      "t": 0.9970703125,
+      "surprisal": 20.02166956317074,
+      "entropy": 0.051286809146404266,
+      "target_prob": 9.394569815412979e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9970405919909497
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 0.0004162544427631367
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00019057516890140164
+        },
+        {
+          "id": 1654,
+          "token": " sure",
+          "prob": 0.00013098028444488873
+        },
+        {
+          "id": 422,
+          "token": " from",
+          "prob": 9.002134337520831e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0001890142448246479,
+      "cumulative_kl": 0.001127082679886371
+    },
+    {
+      "step": 4,
+      "t": 0.9960938096046448,
+      "surprisal": 19.48163967081258,
+      "entropy": 0.06207127124071121,
+      "target_prob": 1.365972934763704e-06,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.996362968628125
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 0.00048632005869020194
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00022972130749090118
+        },
+        {
+          "id": 1654,
+          "token": " sure",
+          "prob": 0.000148319225015475
+        },
+        {
+          "id": 422,
+          "token": " from",
+          "prob": 0.0001308912657012967
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00013149264850653708,
+      "cumulative_kl": 0.001258575328392908
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "22": {
+          "target_token_id": 4025,
+          "target_token": " larger",
+          "target_prob": 1.286695464841614e-06,
+          "surprisal": 19.567897932511116,
+          "entropy": 0.020376024767756462,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990671047411636
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 5.4711679905091265e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 4.828289146114296e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.760275080411488e-05
+            },
+            {
+              "id": 788,
+              "token": " then",
+              "prob": 1.4725448249070647e-05
+            }
+          ]
+        },
+        "23": {
+          "target_token_id": 13,
+          "target_token": ".",
+          "target_prob": 8.93098876986187e-06,
+          "surprisal": 16.77274866112121,
+          "entropy": 0.021381385624408722,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990170137367983
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 6.19933447217395e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 5.1394292445201556e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 2.9283583916550648e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 1.890690257067443e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

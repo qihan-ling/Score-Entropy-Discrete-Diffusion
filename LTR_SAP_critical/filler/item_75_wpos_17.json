@@ -1,0 +1,321 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 17,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      383,
+      1692,
+      1767,
+      460,
+      21923,
+      691,
+      257,
+      1402,
+      2837,
+      286,
+      5951,
+      11,
+      2592,
+      618,
+      262,
+      1048,
+      318,
+      7953,
+      287,
+      31543,
+      3842,
+      13
+    ],
+    "sentence": "The human body can tolerate only a small range of temperature, especially when the person is engaged in vigorous activity.",
+    "sentence_length": 23,
+    "prefix_len": 18,
+    "frontier_start": 18
+  },
+  "commitment_log": {
+    "position": 18,
+    "word_position": 17,
+    "word": "engaged",
+    "step": 4,
+    "steps_taken": 4,
+    "t_commitment": 0.9960938096046448,
+    "committed_token_id": 407,
+    "committed_token": " not",
+    "final_surprisal": 20.56143122071321,
+    "final_entropy": 0.03891194984316826,
+    "cumulative_kl": 0.0005782038206234574,
+    "target_token_id": 7953,
+    "target_token": " engaged",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 22.54294970994553,
+      "entropy": 0.01191881112754345,
+      "target_prob": 1.6364244004307693e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9994181206105873
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 7.963299002919092e-05
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 4.2624467556698244e-05
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 3.319596854748261e-05
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 3.118472970449903e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 21.551852935507405,
+      "entropy": 0.02166176587343216,
+      "target_prob": 3.252713440815569e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9988944844730082
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0001312238285559117
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 9.600540004051388e-05
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 6.598347910971662e-05
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 5.138798894413026e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00030381037504412234,
+      "cumulative_kl": 0.00030381037504412234
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 21.0115789826619,
+      "entropy": 0.030706902965903282,
+      "target_prob": 4.730254090645758e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9983845860973478
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0001792701361510705
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 0.00014862016427732424
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 0.00010873284181549112
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 7.020319906838027e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00016432616394013166,
+      "cumulative_kl": 0.000468136538984254
+    },
+    {
+      "step": 3,
+      "t": 0.9970703125,
+      "surprisal": 20.56143122071321,
+      "entropy": 0.03891194984316826,
+      "target_prob": 6.462379360527848e-07,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9979040537449203
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0002300766198611235
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 0.00020304191241207262
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 0.0001395485346941321
+        },
+        {
+          "id": 257,
+          "token": " a",
+          "prob": 9.009930407978737e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00011006728163920343,
+      "cumulative_kl": 0.0005782038206234574
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "19": {
+          "target_token_id": 287,
+          "target_token": " in",
+          "target_prob": 1.668689219513908e-05,
+          "surprisal": 15.87092518553344,
+          "entropy": 0.01872890815138817,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991133928184341
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 5.4714214768320205e-05
+            },
+            {
+              "id": 13,
+              "token": ".",
+              "prob": 4.002977125625532e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 4.002977125625532e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 3.117522131793312e-05
+            }
+          ]
+        },
+        "20": {
+          "target_token_id": 31543,
+          "target_token": " vigorous",
+          "target_prob": 4.3594408083436065e-09,
+          "surprisal": 27.773209763655714,
+          "entropy": 0.019862696528434753,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990782896419121
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 4.535808538178493e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 4.260997400910256e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 3.117412599751714e-05
+            },
+            {
+              "id": 13,
+              "token": ".",
+              "prob": 2.9285380060244688e-05
+            }
+          ]
+        },
+        "21": {
+          "target_token_id": 3842,
+          "target_token": " activity",
+          "target_prob": 8.755926472758802e-08,
+          "surprisal": 23.445164919453457,
+          "entropy": 0.020544670522212982,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990504468425898
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 4.2608786533638664e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 4.002724930726268e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 3.3183756154504656e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 3.1173257221823385e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

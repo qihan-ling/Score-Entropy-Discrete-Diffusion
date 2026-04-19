@@ -1,0 +1,324 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 15,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      1318,
+      389,
+      783,
+      374,
+      2178,
+      17783,
+      326,
+      4196,
+      1244,
+      2582,
+      30419,
+      262,
+      4451,
+      2342,
+      2272,
+      11,
+      996,
+      262,
+      1664,
+      318,
+      10941,
+      663,
+      33093,
+      9550,
+      13
+    ],
+    "sentence": "There are now rumblings that Apple might soon invade the smart watch space, though the company is maintaining its customary silence.",
+    "sentence_length": 26,
+    "prefix_len": 18,
+    "frontier_start": 18
+  },
+  "commitment_log": {
+    "position": 18,
+    "word_position": 15,
+    "word": "the",
+    "step": 4,
+    "steps_taken": 4,
+    "t_commitment": 0.9960938096046448,
+    "committed_token_id": 407,
+    "committed_token": " not",
+    "final_surprisal": 13.98040672669878,
+    "final_entropy": 0.05134403333067894,
+    "cumulative_kl": 0.0011668093502521515,
+    "target_token_id": 262,
+    "target_token": " the",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 15.329762478609918,
+      "entropy": 0.01609184220433235,
+      "target_prob": 2.428184416203294e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9992187171499983
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 8.475196466879769e-05
+        },
+        {
+          "id": 340,
+          "token": " it",
+          "prob": 5.824911855605247e-05
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 3.3189345302546915e-05
+        },
+        {
+          "id": 262,
+          "token": " the",
+          "prob": 2.428184495110308e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 14.609581860152801,
+      "entropy": 0.029975976794958115,
+      "target_prob": 4.0001625166041777e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9984108469928445
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00020314502880875414
+        },
+        {
+          "id": 340,
+          "token": " it",
+          "prob": 0.0001311602935552017
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 9.595891684285944e-05
+        },
+        {
+          "id": 612,
+          "token": " there",
+          "prob": 8.468344255062584e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0005784546956419945,
+      "cumulative_kl": 0.0005784546956419945
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 14.069749122656491,
+      "entropy": 0.04276924207806587,
+      "target_prob": 5.815452095703222e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9975959774631955
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0003143803944733853
+        },
+        {
+          "id": 340,
+          "token": " it",
+          "prob": 0.00023000558983645066
+        },
+        {
+          "id": 612,
+          "token": " there",
+          "prob": 0.00017912853342684672
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 0.00017912853342684672
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0003228855784982443,
+      "cumulative_kl": 0.0009013402741402388
+    },
+    {
+      "step": 3,
+      "t": 0.9970703125,
+      "surprisal": 13.98040672669878,
+      "entropy": 0.05134403333067894,
+      "target_prob": 6.186973041621968e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9970249496086058
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0004162479122254651
+        },
+        {
+          "id": 340,
+          "token": " it",
+          "prob": 0.0002604812803335602
+        },
+        {
+          "id": 407,
+          "token": " not",
+          "prob": 0.0002446995551750111
+        },
+        {
+          "id": 612,
+          "token": " there",
+          "prob": 0.00017902599955095974
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00026546907611191273,
+      "cumulative_kl": 0.0011668093502521515
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "19": {
+          "target_token_id": 1664,
+          "target_token": " company",
+          "target_prob": 2.5589490633137757e-06,
+          "surprisal": 18.576017138959706,
+          "entropy": 0.01997377723455429,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990864999944022
+            },
+            {
+              "id": 4196,
+              "token": " Apple",
+              "prob": 5.824141100150083e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 3.31849536706082e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 2.0127693625870966e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 1.7762628735264637e-05
+            }
+          ]
+        },
+        "20": {
+          "target_token_id": 318,
+          "target_token": " is",
+          "target_prob": 1.012072607409209e-05,
+          "surprisal": 16.59232767986739,
+          "entropy": 0.020662035793066025,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990753149098206
+            },
+            {
+              "id": 4196,
+              "token": " Apple",
+              "prob": 2.9285292863714865e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.9285292863714865e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 2.427836015753199e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 1.66862567743591e-05
+            }
+          ]
+        },
+        "21": {
+          "target_token_id": 10941,
+          "target_token": " maintaining",
+          "target_prob": 7.1875305707180814e-09,
+          "surprisal": 27.051856666815162,
+          "entropy": 0.020564349368214607,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990822163153974
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.532505093622779e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.928549516045914e-05
+            },
+            {
+              "id": 4196,
+              "token": " Apple",
+              "prob": 1.8908136562472345e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 1.7762552576293635e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

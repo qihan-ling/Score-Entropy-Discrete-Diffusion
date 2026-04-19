@@ -1,0 +1,324 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 8,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      1649,
+      7384,
+      11,
+      257,
+      1341,
+      2954,
+      705,
+      82,
+      3288,
+      36793,
+      318,
+      284,
+      1210,
+      1088,
+      11,
+      36728,
+      663,
+      7894,
+      290,
+      11662,
+      257,
+      645,
+      48392,
+      21212,
+      13
+    ],
+    "sentence": "When attacked, a skunk 's natural inclination is to turn around, lick its tail and spray a noxious scent.",
+    "sentence_length": 26,
+    "prefix_len": 11,
+    "frontier_start": 11
+  },
+  "commitment_log": {
+    "position": 11,
+    "word_position": 8,
+    "word": "is",
+    "step": 4,
+    "steps_taken": 4,
+    "t_commitment": 0.9960938096046448,
+    "committed_token_id": 198,
+    "committed_token": "\n",
+    "final_surprisal": 15.241733571804046,
+    "final_entropy": 0.03632359951734543,
+    "cumulative_kl": 0.0007089973369147629,
+    "target_token_id": 318,
+    "target_token": " is",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 16.68201859054987,
+      "entropy": 0.011120114475488663,
+      "target_prob": 9.510689778835513e-06,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9994059755570737
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0001233364933061228
+        },
+        {
+          "id": 705,
+          "token": " '",
+          "prob": 7.02750198963117e-05
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 4.537296229971258e-05
+        },
+        {
+          "id": 286,
+          "token": " of",
+          "prob": 1.7768308649676208e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 16.05159934707272,
+      "entropy": 0.019506657496094704,
+      "target_prob": 1.472268832003465e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.998879854346533
+        },
+        {
+          "id": 705,
+          "token": " '",
+          "prob": 0.0002163483256906543
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00017935906661704432
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 7.959010132109716e-05
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 3.1167934243612927e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0003421606379561126,
+      "cumulative_kl": 0.0003421606379561126
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 15.691793614186853,
+      "entropy": 0.02833504229784012,
+      "target_prob": 1.8892935258918442e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.998278962331624
+        },
+        {
+          "id": 705,
+          "token": " '",
+          "prob": 0.00040394875539163065
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00024500732716770476
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 0.00011573326289947081
+        },
+        {
+          "id": 366,
+          "token": " \"",
+          "prob": 6.194754542647807e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00023623014567419887,
+      "cumulative_kl": 0.0005783907836303115
+    },
+    {
+      "step": 3,
+      "t": 0.9970703125,
+      "surprisal": 15.241733571804046,
+      "entropy": 0.03632359951734543,
+      "target_prob": 2.5809584258240648e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9977378872778252
+        },
+        {
+          "id": 705,
+          "token": " '",
+          "prob": 0.000534855114848399
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.0002774791753071348
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 0.00015810286272939292
+        },
+        {
+          "id": 366,
+          "token": " \"",
+          "prob": 9.589423757226995e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00013060655328445137,
+      "cumulative_kl": 0.0007089973369147629
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "12": {
+          "target_token_id": 284,
+          "target_token": " to",
+          "target_prob": 1.22092678793706e-05,
+          "surprisal": 16.32166378176659,
+          "entropy": 0.017555871978402138,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991851537660463
+            },
+            {
+              "id": 82,
+              "token": "s",
+              "prob": 7.479084322481591e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 4.828859653163168e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.318823048481944e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.1427933782236142e-05
+            }
+          ]
+        },
+        "13": {
+          "target_token_id": 1210,
+          "target_token": " turn",
+          "target_prob": 1.6359331311832648e-07,
+          "surprisal": 22.54338288493059,
+          "entropy": 0.019251521676778793,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991181527610966
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 5.824325618887388e-05
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 2.751216800021025e-05
+            },
+            {
+              "id": 13,
+              "token": ".",
+              "prob": 2.584528943378025e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 2.4279401152906546e-05
+            }
+          ]
+        },
+        "14": {
+          "target_token_id": 1088,
+          "target_token": " around",
+          "target_prob": 3.686502338950959e-07,
+          "surprisal": 21.37124399190426,
+          "entropy": 0.020169835537672043,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990829302593474
+            },
+            {
+              "id": 257,
+              "token": " a",
+              "prob": 4.002855076488678e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.760334644279999e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 2.9285516087868064e-05
+            },
+            {
+              "id": 82,
+              "token": "s",
+              "prob": 2.280758357839671e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
