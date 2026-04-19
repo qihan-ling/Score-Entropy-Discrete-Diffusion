@@ -1,0 +1,313 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 11,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      2293,
+      262,
+      10622,
+      14971,
+      4488,
+      262,
+      2855,
+      2722,
+      47207,
+      3241,
+      422,
+      8372,
+      4446,
+      13
+    ],
+    "sentence": "After the corrupt politician signed the bill received unwelcome attention from southern voters.",
+    "sentence_length": 15,
+    "prefix_len": 11,
+    "frontier_start": 11
+  },
+  "commitment_log": {
+    "position": 11,
+    "word_position": 11,
+    "word": "from",
+    "step": 4,
+    "steps_taken": 4,
+    "t_commitment": 0.9960938096046448,
+    "committed_token_id": 198,
+    "committed_token": "\n",
+    "final_surprisal": 14.701075602875157,
+    "final_entropy": 0.04631080478429794,
+    "cumulative_kl": 0.0007001593912718818,
+    "target_token_id": 422,
+    "target_token": " from",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 16.50182825274897,
+      "entropy": 0.01440242026001215,
+      "target_prob": 1.0775928785733413e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9993045401685829
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 9.604481117122336e-05
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 3.533291175219455e-05
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 2.9292012005639836e-05
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 2.9292012005639836e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 15.60106886067902,
+      "entropy": 0.026047466322779655,
+      "target_prob": 2.011918149946723e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9986640205813689
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 0.00016845584830660264
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 8.470491628671726e-05
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 7.957290382616002e-05
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 6.19714399632939e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0003675152256619185,
+      "cumulative_kl": 0.0003675152256619185
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 14.970727434915252,
+      "entropy": 0.036225657910108566,
+      "target_prob": 3.1143110390985385e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9980842882246131
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 0.00021617601327719973
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 0.00012317338413445517
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00012317338413445517
+        },
+        {
+          "id": 290,
+          "token": " and",
+          "prob": 0.0001087001367421674
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00017531901539769024,
+      "cumulative_kl": 0.0005428342410596088
+    },
+    {
+      "step": 3,
+      "t": 0.9970703125,
+      "surprisal": 14.701075602875157,
+      "entropy": 0.04631080478429794,
+      "target_prob": 3.7543544749496505e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9974940788486414
+        },
+        {
+          "id": 284,
+          "token": " to",
+          "prob": 0.00022998209610604925
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 0.00021604817927419848
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00016825850112777747
+        },
+        {
+          "id": 290,
+          "token": " and",
+          "prob": 0.00014848760280208127
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.000157325150212273,
+      "cumulative_kl": 0.0007001593912718818
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "12": {
+          "target_token_id": 8372,
+          "target_token": " southern",
+          "target_prob": 1.7243419137003002e-08,
+          "surprisal": 25.789378889375193,
+          "entropy": 0.018787410110235214,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991650406199997
+            },
+            {
+              "id": 198,
+              "token": "\n",
+              "prob": 8.474741192043948e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 3.760643690130412e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 1.7764025098815873e-05
+            },
+            {
+              "id": 284,
+              "token": " to",
+              "prob": 1.5676696439686788e-05
+            }
+          ]
+        },
+        "13": {
+          "target_token_id": 4446,
+          "target_token": " voters",
+          "target_prob": 4.1363879432765316e-08,
+          "surprisal": 24.527053259714286,
+          "entropy": 0.019812822341918945,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.999142548179109
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 2.928726363203624e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 2.012882277804154e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.012882277804154e-05
+            },
+            {
+              "id": 13,
+              "token": ".",
+              "prob": 2.012882277804154e-05
+            }
+          ]
+        },
+        "14": {
+          "target_token_id": 13,
+          "target_token": ".",
+          "target_prob": 2.0128380128880963e-05,
+          "surprisal": 15.60040940123689,
+          "entropy": 0.02046239748597145,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991205327494357
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 2.7512233536642393e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 2.2808441987553222e-05
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.1426547958137718e-05
+            },
+            {
+              "id": 13,
+              "token": ".",
+              "prob": 2.0128379253057962e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

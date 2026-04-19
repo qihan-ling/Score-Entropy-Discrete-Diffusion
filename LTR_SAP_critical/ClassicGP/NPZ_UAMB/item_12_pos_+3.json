@@ -1,0 +1,278 @@
+{
+  "config": {
+    "model_path": "louaaron/sedd-medium",
+    "steps": 1024,
+    "seed": 42,
+    "experiment_type": "critical_position",
+    "target_word_position": 11,
+    "future_window": 3
+  },
+  "tokenization": {
+    "full_ids": [
+      50256,
+      2893,
+      262,
+      8796,
+      4706,
+      3111,
+      262,
+      3047,
+      3947,
+      38347,
+      11334,
+      284,
+      683,
+      13
+    ],
+    "sentence": "While the assistant manager worked the training seemed unnecessarily demanding to him.",
+    "sentence_length": 14,
+    "prefix_len": 11,
+    "frontier_start": 11
+  },
+  "commitment_log": {
+    "position": 11,
+    "word_position": 11,
+    "word": "to",
+    "step": 4,
+    "steps_taken": 4,
+    "t_commitment": 0.9960938096046448,
+    "committed_token_id": 198,
+    "committed_token": "\n",
+    "final_surprisal": 14.341098190821965,
+    "final_entropy": 0.05535131320357323,
+    "cumulative_kl": 0.0009353501372970641,
+    "target_token_id": 284,
+    "target_token": " to",
+    "correct": false
+  },
+  "frontier_history": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "surprisal": 15.960937886390534,
+      "entropy": 0.016613313928246498,
+      "target_prob": 1.5677576811867766e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9992210976174688
+        },
+        {
+          "id": 290,
+          "token": " and",
+          "prob": 4.829033362523499e-05
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 4.536456885401694e-05
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 4.00340864806328e-05
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 2.928956610440476e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0,
+      "cumulative_kl": 0.0
+    },
+    {
+      "step": 1,
+      "t": 0.9990234375,
+      "surprisal": 15.150536005937417,
+      "entropy": 0.03078157640993595,
+      "target_prob": 2.7493764719110914e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9984498249863836
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00011575307148333279
+        },
+        {
+          "id": 290,
+          "token": " and",
+          "prob": 0.00010873994690294992
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 9.014858097054463e-05
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 7.955583685956416e-05
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0005093622603453696,
+      "cumulative_kl": 0.0005093622603453696
+    },
+    {
+      "step": 2,
+      "t": 0.998046875,
+      "surprisal": 14.610589882131228,
+      "entropy": 0.043619412928819656,
+      "target_prob": 3.997368548880331e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9977135604041565
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00020300315304230628
+        },
+        {
+          "id": 290,
+          "token": " and",
+          "prob": 0.00016829552354058098
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 0.00012312763268763132
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 0.00012312763268763132
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.0002489110338501632,
+      "cumulative_kl": 0.0007582732941955328
+    },
+    {
+      "step": 3,
+      "t": 0.9970703125,
+      "surprisal": 14.341098190821965,
+      "entropy": 0.05535131320357323,
+      "target_prob": 4.818360321223736e-05,
+      "top_k": [
+        {
+          "id": 50257,
+          "token": "",
+          "prob": 0.9970126256530536
+        },
+        {
+          "id": 11,
+          "token": ",",
+          "prob": 0.00029516034900430163
+        },
+        {
+          "id": 290,
+          "token": " and",
+          "prob": 0.00024469653051003876
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "prob": 0.00016817728902359508
+        },
+        {
+          "id": 198,
+          "token": "\n",
+          "prob": 0.00014841593337326948
+        }
+      ],
+      "argmax_id": 50257,
+      "argmax_token": "",
+      "kl_from_prev": 0.00017707684310153127,
+      "cumulative_kl": 0.0009353501372970641
+    }
+  ],
+  "future_scores": [
+    {
+      "step": 0,
+      "t": 1.0,
+      "positions": {
+        "12": {
+          "target_token_id": 683,
+          "target_token": " him",
+          "target_prob": 1.8537359380843554e-07,
+          "surprisal": 22.363060915365974,
+          "entropy": 0.02030397206544876,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9991076809471064
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 2.5845018547836756e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 2.427914667912688e-05
+            },
+            {
+              "id": 198,
+              "token": "\n",
+              "prob": 2.280814859994056e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 1.472604630981944e-05
+            }
+          ]
+        },
+        "13": {
+          "target_token_id": 13,
+          "target_token": ".",
+          "target_prob": 1.299534869758645e-05,
+          "surprisal": 16.23164512900458,
+          "entropy": 0.02073812671005726,
+          "top_k": [
+            {
+              "id": 50257,
+              "token": "",
+              "prob": 0.9990813833820789
+            },
+            {
+              "id": 262,
+              "token": " the",
+              "prob": 3.117422253113894e-05
+            },
+            {
+              "id": 11,
+              "token": ",",
+              "prob": 3.117422253113894e-05
+            },
+            {
+              "id": 286,
+              "token": " of",
+              "prob": 2.012759054610235e-05
+            },
+            {
+              "id": 198,
+              "token": "\n",
+              "prob": 1.567538387462441e-05
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
