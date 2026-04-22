@@ -1,0 +1,233 @@
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(cowplot)
+library(tidyr)
+library(lme4)
+library(lmerTest)
+library(stringr)
+library(emmeans)
+library(foreach)
+library(parallel)
+library(doSNOW)
+library(purrr)
+options(dplyr.summarise.inform = FALSE)
+num_multithread_cores <- 10
+```
+
+```{r}
+datasets <- c("Filler", "ClassicGP", "RelativeClause", 
+              "AttachmentAmbiguity", "Agreement")
+#all models
+model_names <- read.csv('../data/surprisals/all_lm_names.csv')$x
+measures <- c('gz', 'gp', 'regout')
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+```
+
+
+Analyze delta LL of surprisal models over baseline model
+```{r}
+model_names <- read.csv('../data/surprisals/all_lm_names.csv')$x
+models_to_eval <- model_names
+dll_measures <- c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+pb = txtProgressBar(min = 0, max = length(dll_measures)*length(models_to_eval), initial = 0, style = 3)
+stepi <- 0
+model_name_i <- c()
+measure_i <- c()
+dll_i <- c()
+ll_i <- c()
+nobs_i <- c()
+for (measure in dll_measures){
+  baseline_model_i <- readRDS(paste0("../data/filler_models/trained_lmers/Filler_baseline_surp_",
+                                         measure, ".RDS"))
+  measure_baseline_ll <- logLik(baseline_model_i)
+  nobs_baseline <- nobs(baseline_model_i)
+  for (model_name in models_to_eval) {
+    model_i <- readRDS(paste0("../data/filler_models/trained_lmers/Filler_",
+                                       model_name, "_",
+                                       measure, ".RDS"))
+    model_ll <- logLik(model_i)
+    nobs_surp_model <- nobs(model_i)
+    nobs_i <- append(nobs_i, nobs_surp_model)
+    if(nobs_baseline != nobs_surp_model){
+      print(paste('ERROR:',measure, 'baseline and', model_name, 'surprisal model have different # of observations!', nobs_baseline, nobs_surp_model))
+    }
+    ll_i <- append(ll_i, model_ll)
+    dll_i <- append(dll_i, model_ll-measure_baseline_ll)
+    model_name_i <- append(model_name_i, model_name)
+    measure_i <- append(measure_i, measure)
+    stepi <- stepi + 1
+    setTxtProgressBar(pb,stepi)
+  }
+}
+close(pb)
+model_lls <- data.frame(model = model_name_i, measure = measure_i, ll = ll_i, dll = dll_i, nobs = nobs_i)
+model_lls$model <- factor(model_lls$model, levels=model_names)
+saveRDS(model_lls, '../data/filler_models/model_lls.rds')
+```
+
+Get surprisal coefficients of best models, by measure
+```{r}
+best_models <- c("pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", 'lstm_surp')
+measures <- c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+
+
+num_cores = min(num_multithread_cores, detectCores()-1)
+cl <- makeCluster(num_cores)
+registerDoSNOW(cl)
+all_tasks <- expand.grid(model_name = best_models, measure = measures, stringsAsFactors = FALSE)
+total <- nrow(all_tasks)
+pb <- txtProgressBar(max = total, style = 3)
+progress <- function(n) setTxtProgressBar(pb, n)
+opts <- list(progress = progress)
+
+model_cis <- foreach(i = 1:nrow(all_tasks), .packages=c('dplyr', 'stringr', 'lme4', 'stats'), .combine = rbind, .options.snow = opts) %dopar% {
+  model_name <- all_tasks$model_name[i]
+      measure_i <- all_tasks$measure[i]
+      curr_lmer <- readRDS(paste0("../data/filler_models/trained_lmers/Filler_", model_name, '_', measure_i, '.RDS'))
+      curr_surp_ci <- confint(curr_lmer, method="boot", nsim=500, parm=c(model_name, paste0(model_name, '_p1')))
+      data.frame('model_name'=rep(model_name, 2), 'measure'=rep(measure_i, 2), 'surp_region'=c('curr','prev'), 'b_mean'=c(fixef(curr_lmer)[model_name], fixef(curr_lmer)[paste0(model_name, '_p1')]), 'b_lowerCI'=c(curr_surp_ci[1,1],curr_surp_ci[2,1]), 'b_upperCI' = c(curr_surp_ci[1,2],curr_surp_ci[2,2]))
+}
+close(pb)
+stopCluster(cl)
+saveRDS(model_cis, '../data/filler_models/lmer_cis.RDS')
+
+```
+
+Fit filler models with scaled response variables, get resulting CIs
+```{r}
+best_models <- c("pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", 'lstm_surp')
+measures <- c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+
+
+formula_lm <- "scale(MEASURE) ~ SURPRISAL + SURPRISAL_p1 + 
+  region_s + 
+  logfreq_s*length_s + 
+  logfreq_p1_s*length_p1_s + 
+  (1 + SURPRISAL + SURPRISAL_p1 + logfreq_s + logfreq_p1_s || subj) + 
+  (1 | item)"
+
+et_with_surprisal <- readRDS("../data/empirical_reading_data/ET_data_processed_w_surprisals.rds")
+et_with_surprisal <- et_with_surprisal %>% subset(!is.na(logfreq_s) & !is.na(logfreq_p1_s) & !is.na(logfreq_p2_s) & (sent_length != region-1))
+
+
+num_cores = min(num_multithread_cores, detectCores()-1)
+cl <- makeCluster(num_cores)
+registerDoSNOW(cl)
+all_tasks <- expand.grid(model_name = best_models, measure = measures, stringsAsFactors = FALSE)
+total <- nrow(all_tasks)
+pb <- txtProgressBar(max = total, style = 3)
+progress <- function(n) setTxtProgressBar(pb, n)
+opts <- list(progress = progress)
+
+model_cis <- foreach(i = 1:nrow(all_tasks), .packages=c('dplyr', 'stringr', 'lme4', 'stats'), .combine = rbind, .options.snow = opts) %dopar% {
+  model_name <- all_tasks$model_name[i]
+  measure_i <- all_tasks$measure[i]
+  regression_contingent_i <- measure_i == 'gzfw' | measure_i == 'gzbk' | measure_i == 'gpbk'
+  regressed_i <- measure_i != 'gzfw'
+  if(regression_contingent_i){
+    measure_name <- substr(measure_i, 1, 2)
+  }
+  else{
+    measure_name <- measure_i
+  }
+  curr_formula <- str_replace_all(str_replace_all(formula_lm, "MEASURE", measure_name), "SURPRISAL", model_name)
+  vars_in_model <- c(all.vars(as.formula(curr_formula)), 'dataset', 'cond', 'regressed', 'eos_region', 'bos_region')
+  minimal_dataset <- et_with_surprisal %>% select(all_of(vars_in_model)) %>%
+                      filter(dataset == "Filler" & !bos_region & !eos_region)
+  if(regression_contingent_i){
+    minimal_dataset <- minimal_dataset %>% filter(regressed == regressed_i)
+  }
+  curr_lmer <- lmer(data=minimal_dataset,
+                         curr_formula,
+                         control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+  curr_surp_ci <- confint(curr_lmer, method="boot", nsim=500, parm=c(model_name, paste0(model_name, '_p1')))
+      data.frame('model_name'=rep(model_name, 2), 'measure'=rep(measure_i, 2), 'surp_region'=c('curr','prev'), 'b_mean'=c(fixef(curr_lmer)[model_name], fixef(curr_lmer)[paste0(model_name, '_p1')]), 'b_lowerCI'=c(curr_surp_ci[1,1],curr_surp_ci[2,1]), 'b_upperCI' = c(curr_surp_ci[1,2],curr_surp_ci[2,2]))
+}
+stopCluster(cl)
+close(pb)
+saveRDS(model_cis, '../data/filler_models/lmer_cis_scaled.RDS')
+```
+
+
+plot surprisal coefs
+```{r}
+model_lmers <- readRDS('../data/filler_models/lmer_cis_scaled.RDS')
+surp_means_sds <- read.csv('../data/surprisals/surp_means_sds.csv')
+
+group.colors <- c(pythia.70m_step3000_surp='#CB6BCEFF', gpt2_surp='#468892FF', mamba.130m_surp='#74F3D3FF', LSTM_800_10m_b_0='#FDC067FF', rnng_topdown_10_2401_surp='#AC9ECEFF', lstm_surp='#751C6DFF')
+
+model_lmers$model_name <- factor(model_lmers$model_name, levels=c('pythia.70m_step3000_surp', 'gpt2_surp', 'mamba.130m_surp', 'LSTM_800_10m_b_0', 'rnng_topdown_10_2401_surp', 'lstm_surp'))
+model_lmers$b_mean <- as.numeric(model_lmers$b_mean)
+model_lmers$b_lowerCI <- as.numeric(model_lmers$b_lowerCI)
+model_lmers$b_upperCI <- as.numeric(model_lmers$b_upperCI)
+
+
+
+measure_labels <- c('Forward Reading Time', 'Regressive Gaze', 'Regressive Go-Past', 'Regressions Out')
+names(measure_labels) <- c('gzfw', 'gzbk', 'gpbk', 'regout')
+
+plt_data <- subset(model_lmers, surp_region == 'curr' & (measure == 'gpbk' | measure == 'gzfw' | measure == 'gzbk'))
+plt_data$measure <- factor(plt_data$measure, levels=c('gzfw', 'gzbk', 'gpbk'))
+
+plt_scaled_surp <- ggplot(data = plt_data, aes(x=measure, color=model_name)) +
+  geom_errorbar(aes(ymin=b_lowerCI, ymax=b_upperCI), position = position_dodge(width=0.75), width=0.6) +
+  geom_point(aes(y=b_mean), position = position_dodge(width=0.75)) +
+ 
+  scale_color_manual(values=group.colors) +
+  scale_x_discrete(labels=measure_labels) +
+  labs(x = "", y = 'Scaled Surprisal Coefficient') +
+  theme_minimal()+
+  theme(legend.position="none",
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 12))
+
+
+model_lmers[(model_lmers$model == 'pythia.70m_step3000_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] <- model_lmers[(model_lmers$model == 'pythia.70m_step3000_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] / surp_means_sds$pythia.70m_step3000_surp_sd
+
+model_lmers[(model_lmers$model == 'gpt2_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] <- model_lmers[(model_lmers$model == 'gpt2_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] / surp_means_sds$gpt2_surp_sd
+
+model_lmers[(model_lmers$model == 'mamba.130m_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] <- model_lmers[(model_lmers$model == 'mamba.130m_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] / surp_means_sds$mamba.130m_surp_sd
+
+model_lmers[(model_lmers$model == 'LSTM_800_10m_b_0'), c('b_mean', 'b_lowerCI', 'b_upperCI')] <- model_lmers[(model_lmers$model == 'LSTM_800_10m_b_0'), c('b_mean', 'b_lowerCI', 'b_upperCI')] / surp_means_sds$LSTM_800_10m_b_0_sd
+
+model_lmers[(model_lmers$model == 'lstm_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] <- model_lmers[(model_lmers$model == 'lstm_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] / surp_means_sds$lstm_surp_sd
+
+model_lmers[(model_lmers$model == 'rnng_topdown_10_2401_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] <- model_lmers[(model_lmers$model == 'rnng_topdown_10_2401_surp'), c('b_mean', 'b_lowerCI', 'b_upperCI')] / surp_means_sds$rnng_topdown_10_2401_surp_sd
+model_lmers$direction <- ''
+
+plt_data <- subset(model_lmers, surp_region == 'curr' & (measure == 'gpbk' | measure == 'gzfw' | measure == 'gzbk' | measure == 'regout'))
+plt_data$measure <- factor(plt_data$measure, levels=c('gzfw', 'gzbk', 'gpbk', 'regout'))
+
+plt_raw_surp <- ggplot(data = plt_data, aes(x=measure, color=model_name)) +
+  geom_point(aes(y=b_mean), position = position_dodge2(width=0.9)) +
+  geom_line(aes(y = b_mean, group=interaction(model_name, measure)), position = position_dodge2(width=0.9), linetype='dashed') +
+  geom_errorbar(aes(ymin=b_lowerCI, ymax=b_upperCI), position = position_dodge2(width=0.9)) +
+  scale_color_manual(values=group.colors) +
+  scale_x_discrete(labels=measure_labels) +
+  ggforce::facet_row(~measure, scales = "free", space='free', labeller=labeller(measure=measure_labels)) +
+  labs(x = "", y = 'Raw Surprisal Coefficient (ms/bit)') +
+  theme_minimal()+
+  theme(legend.position="none",
+        strip.text.x = element_blank(),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 12))
+
+legend_grob <- ggdraw() + draw_grob(grid::rasterGrob(png::readPNG("../figures/filler_model_legend.png")))
+legend_plot <- cowplot::plot_grid(
+  legend_grob,
+  plt_raw_surp,
+  plt_scaled_surp,
+  ncol = 1,
+  rel_heights = c(1, 16, 16)
+)
+
+ggsave("../figures/filler_coef_plot.pdf", legend_plot, width = 8, height = 8, units = "in")
+```

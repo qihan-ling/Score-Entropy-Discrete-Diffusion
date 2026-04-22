@@ -1,0 +1,366 @@
+
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(cowplot)
+library(tidyr)
+library(lme4)
+library(lmerTest)
+library(stringr)
+library(emmeans)
+library(foreach)
+library(parallel)
+library(doSNOW)
+library(purrr)
+options(dplyr.summarise.inform = FALSE)
+num_multithread_cores <- 5
+```
+
+```{r}
+datasets <- c("Filler", "ClassicGP", "RelativeClause", 
+              "AttachmentAmbiguity", "Agreement")
+#all models
+model_names <- read.csv('../data/surprisals/all_lm_names.csv')$x
+measures <- c('gz', 'gp', 'regout')
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+```
+
+
+Fit filler models
+```{r}
+et_with_surprisal <- readRDS("../data/empirical_reading_data/ET_data_processed_w_surprisals.rds")
+et_with_surprisal <- et_with_surprisal %>% subset(!is.na(logfreq_s) & !is.na(logfreq_p1_s) & !is.na(logfreq_p2_s) & (sent_length != region-1))
+```
+
+```{r}
+###Formulae for all models
+formula_lm <- "MEASURE ~ SURPRISAL + SURPRISAL_p1 + 
+  region_s + 
+  logfreq_s*length_s + 
+  logfreq_p1_s*length_p1_s + 
+  (1 + SURPRISAL + SURPRISAL_p1 + logfreq_s + logfreq_p1_s || subj) + 
+  (1 | item)"
+
+formula_nosurp <- "MEASURE ~ region_s + 
+                 logfreq_s*length_s + 
+                 logfreq_p1_s*length_p1_s + 
+                 (1 + logfreq_s + logfreq_p1_s || subj) + 
+                 (1 | item)"
+
+```
+
+Fit filler models (non regression-contingent)
+gz = gaze duration
+gp = go-past time
+regout = first pass regressions out
+
+```{r}
+
+measures <- c('gz', 'gp', 'regout')
+
+num_cores = min(num_multithread_cores, detectCores()-1)
+cl <- makeCluster(num_cores)
+registerDoSNOW(cl)
+all_tasks <- expand.grid(model_name = model_names, measure = measures, stringsAsFactors = FALSE)
+total <- nrow(all_tasks)
+pb <- txtProgressBar(max = total, style = 3)
+progress <- function(n) setTxtProgressBar(pb, n)
+opts <- list(progress = progress)
+result <- 
+foreach(i = 1:nrow(all_tasks), .packages=c('dplyr', 'stringr', 'lme4'), .options.snow = opts) %dopar% {
+  model_name <- all_tasks$model_name[i]
+  measure <- all_tasks$measure[i]
+    if(model_name == 'baseline_surp'){
+      curr_formula <- str_replace_all(formula_nosurp, "MEASURE", measure)
+    }
+    else{
+      curr_formula <- str_replace_all(str_replace_all(formula_lm, "MEASURE", measure), "SURPRISAL", model_name)
+    }
+    vars_in_model <- c(all.vars(as.formula(curr_formula)), 'dataset', 'cond', 'regressed', 'eos_region', 'bos_region')
+    minimal_dataset <- et_with_surprisal %>% select(all_of(vars_in_model)) %>%
+                        filter(dataset == "Filler" & !bos_region & !eos_region)
+    if(measure ==  'regout'){ #binary measures
+      filler.model <- glmer(data=minimal_dataset,
+                              curr_formula, family='binomial',
+                              control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+    }
+    else{ #continuous measures
+        filler.model <- lmer(data=minimal_dataset,
+                           curr_formula,
+                           control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+    }
+  
+    saveRDS(filler.model, paste0("../data/filler_models/trained_lmers/Filler_", model_name, "_", measure, ".RDS"))
+
+  NULL
+}
+close(pb)
+stopCluster(cl)
+```
+Fit regression-contingent filler models
+gzfw = forward reading time
+gzbk = regressive gaze duration
+gpbk = regressive go-past time
+
+```{r}
+measures <- c('gzfw', 'gzbk', 'gpbk')
+
+num_cores = min(num_multithread_cores, detectCores()-1)
+cl <- makeCluster(num_cores)
+registerDoSNOW(cl)
+all_tasks <- expand.grid(model_name = model_names, measure = measures, stringsAsFactors = FALSE)
+total <- nrow(all_tasks)
+pb <- txtProgressBar(max = total, style = 3)
+progress <- function(n) setTxtProgressBar(pb, n)
+opts <- list(progress = progress)
+result <- 
+foreach(i = 1:nrow(all_tasks), .packages=c('dplyr', 'stringr', 'lme4'), .options.snow = opts) %dopar% {
+  model_name <- all_tasks$model_name[i]
+  full_measure_name <- all_tasks$measure[i]
+  measure <- substr(full_measure_name, 1, 2)
+  if(model_name == "baseline_surp"){
+    curr_formula <- str_replace_all(formula_nosurp, "MEASURE", measure)
+    }
+  else{
+    curr_formula <- str_replace_all(str_replace_all(formula_lm, "MEASURE", measure), "SURPRISAL", model_name)
+    }
+  vars_in_model <- c(all.vars(as.formula(curr_formula)), 'dataset', 'cond', 'regressed', 'eos_region', 'bos_region')
+  if(full_measure_name == 'gzfw'){
+    minimal_dataset <- et_with_surprisal %>% select(all_of(vars_in_model)) %>%
+                  filter(dataset == "Filler" & !bos_region & !eos_region & !regressed)
+  }
+  else{
+    minimal_dataset <- et_with_surprisal %>% select(all_of(vars_in_model)) %>%
+                  filter(dataset == "Filler" & !bos_region & !eos_region & regressed)
+  }
+  
+  filler.model_reg_contingent <- lmer(data=minimal_dataset,
+                     curr_formula,
+                     control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+  
+  saveRDS(filler.model_reg_contingent, paste0("../data/filler_models/trained_lmers/Filler_", model_name, "_", full_measure_name, ".RDS"))
+  NULL
+  }
+close(pb)
+stopCluster(cl)
+```
+
+Generate predicted reading data from filler models 
+```{r}
+export_csv <- function(et_data, models, measures, datasets) {
+  print('Predicting from filler models:')
+  num_cores = min(10, detectCores()-1)
+  cl <- makeCluster(num_cores)
+  registerDoSNOW(cl)
+  all_tasks <- expand.grid(model_name = models, measure = measures, stringsAsFactors = FALSE)
+  total <- nrow(all_tasks)
+  curr_dataset_count <- 1
+  for(curr_dataset in datasets){
+    print(paste0('(', curr_dataset_count, '/', length(datasets), ') ', curr_dataset, ' Dataset'))
+    pb <- txtProgressBar(max = total, style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    curr_data <- subset(et_data, dataset == curr_dataset)
+
+    preds_i <- foreach(i = 1:nrow(all_tasks), .packages=c('dplyr', 'stringr', 'lme4'), .combine = cbind, .options.snow = opts) %dopar% {
+      model_name <- all_tasks$model_name[i]
+      measure <- all_tasks$measure[i]
+      filler_model <- readRDS(paste0("../data/filler_models/trained_lmers/Filler_",
+                                   model_name, "_",
+                                   measure, ".RDS"))
+      predicted_i <- predict(filler_model, newdata=curr_data, allow.new.levels = TRUE)
+      newcol <- data.frame(predicted_i)
+      names(newcol) <- paste0("predicted_", model_name, "_", measure)
+      newcol
+    }
+    close(pb)
+    out_fname <- paste0('../data/predicted_reading_data/', curr_dataset, "_predicted.rds")
+    print(paste0('Saving to \'', out_fname, '\'...'))
+    saveRDS(cbind(curr_data, preds_i), out_fname)
+    print('Done!')
+    rm(curr_data)
+    rm(preds_i)
+    curr_dataset_count <- curr_dataset_count + 1
+  }
+  stopCluster(cl)
+}
+```
+
+```{r}
+model_names <- read.csv('../data/surprisals/all_lm_names.csv')$x
+measures <- c('gz', 'gp', 'gzfw', 'gzbk', 'gpbk', 'regout')
+datasets <- c("Filler", "ClassicGP", "RelativeClause", 
+                     "AttachmentAmbiguity", "Agreement")
+
+export_csv(et_with_surprisal, c(model_names), c(measures), datasets)
+```
+
+Get split-half upper-bound delta-log likelihood of filler models:
+```{r}
+et_with_surprisal <- readRDS("../data/empirical_reading_data/ET_data_processed_w_surprisals.rds")
+```
+
+
+```{r}
+set.seed(54321)
+total_iterations <- 15
+splithalf_dlls <- numeric()
+splithalf_num_obs <- numeric()
+splithalf_measure_name <- character()
+measures <-  c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+pb = txtProgressBar(min = 0, max = total_iterations*length(measures), initial = 0, style = 3)
+stepi <- 0
+for(measure in measures){
+  reg_contingent <- (measure == 'gzfw' | measure == 'gzbk' | measure == 'gpbk')
+  regressed_i <- measure != 'gzfw'
+  for(i in 1:total_iterations){
+    subject_ids <- unique(et_with_surprisal$subj)
+    split_a <- sample(subject_ids, size=round(length(subject_ids)/2), replace=FALSE)
+    if(reg_contingent){
+      et_with_surprisal_split_a <- subset(et_with_surprisal, (subj %in% split_a) & regressed == regressed_i)
+      et_with_surprisal_split_b <- subset(et_with_surprisal, !(subj %in% split_a) & regressed == regressed_i)
+    }
+    else{
+      et_with_surprisal_split_a <- subset(et_with_surprisal, (subj %in% split_a))
+      et_with_surprisal_split_b <- subset(et_with_surprisal, !(subj %in% split_a))
+    }
+    
+    
+    word_mean_rts_a <- et_with_surprisal_split_a %>% group_by(item, cond, dataset, region) %>%
+      summarize(subj_mean_gz = mean(gz, na.rm=T),
+                subj_mean_gp = mean(gp, na.rm=T),
+                subj_mean_regout = mean(regout, na.rm=T)) %>%
+      mutate(subj_mean_gz = (subj_mean_gz-mean(subj_mean_gz))/sd(subj_mean_gz),
+             subj_mean_gp = (subj_mean_gp-mean(subj_mean_gp))/sd(subj_mean_gp))
+    
+    word_mean_rts_b <- et_with_surprisal_split_b %>% group_by(item, cond, dataset, region) %>%
+      summarize(subj_mean_gz = mean(gz, na.rm=T),
+                subj_mean_gp = mean(gp, na.rm=T),
+                subj_mean_regout = mean(regout, na.rm=T)) %>%
+      mutate(subj_mean_gz = (subj_mean_gz-mean(subj_mean_gz))/sd(subj_mean_gz),
+             subj_mean_gp = (subj_mean_gp-mean(subj_mean_gp))/sd(subj_mean_gp))
+    
+    et_with_surprisal_split_a <- merge(et_with_surprisal_split_a, word_mean_rts_b, by=c('item', 'cond', 'dataset', 'region'))
+    et_with_surprisal_split_b <- merge(et_with_surprisal_split_b, word_mean_rts_a, by=c('item', 'cond', 'dataset', 'region'))
+    
+    et_with_surprisal_split_a <- et_with_surprisal_split_a %>%
+      group_by_at(vars(item, subj, cond)) %>%
+          mutate(subj_mean_gz_p1 = lag(subj_mean_gz, order_by = region),
+                 subj_mean_gz_p2 = lag(subj_mean_gz_p1, order_by = region),
+                 subj_mean_gp_p1 = lag(subj_mean_gp, order_by = region),
+                 subj_mean_gp_p2 = lag(subj_mean_gp_p1, order_by = region),
+                 subj_mean_regout_p1 = lag(subj_mean_regout, order_by = region),
+                 subj_mean_regout_p2 = lag(subj_mean_regout_p1, order_by = region))
+    
+    et_with_surprisal_split_b <- et_with_surprisal_split_b %>%
+      group_by_at(vars(item, subj, cond)) %>%
+          mutate(subj_mean_gz_p1 = lag(subj_mean_gz, order_by = region),
+                 subj_mean_gz_p2 = lag(subj_mean_gz_p1, order_by = region),
+                 subj_mean_gp_p1 = lag(subj_mean_gp, order_by = region),
+                 subj_mean_gp_p2 = lag(subj_mean_gp_p1, order_by = region),
+                 subj_mean_regout_p1 = lag(subj_mean_regout, order_by = region),
+                 subj_mean_regout_p2 = lag(subj_mean_regout_p1, order_by = region))
+    
+    et_with_surprisal_split_a <- et_with_surprisal_split_a %>% subset(!is.na(logfreq_s) & !is.na(logfreq_p1_s) & !is.na(logfreq_p2_s) & (sent_length != region-1))
+    
+    et_with_surprisal_split_b <- et_with_surprisal_split_b %>% subset(!is.na(logfreq_s) & !is.na(logfreq_p1_s) & !is.na(logfreq_p2_s) & (sent_length != region-1))
+    
+    formula_lm <- "MEASURE ~ SURPRISAL + SURPRISAL_p1 + 
+      region_s + 
+      logfreq_s*length_s + 
+      logfreq_p1_s*length_p1_s + 
+      (1 + SURPRISAL + SURPRISAL_p1 + logfreq_s + logfreq_p1_s || subj) + 
+      (1 | item)"
+    
+    formula_nosurp <- "MEASURE ~ region_s + 
+                     logfreq_s*length_s + 
+                     logfreq_p1_s*length_p1_s + 
+                     (1 + logfreq_s + logfreq_p1_s || subj) + 
+                     (1 | item)"
+    
+    if(reg_contingent){
+      measure_formula <- substr(measure, 1, 2)
+    }
+    else{
+      measure_formula <- measure
+    }
+    
+    model_name <- paste0('subj_mean_', measure_formula)
+      
+      baseline_formula <- str_replace_all(formula_nosurp, "MEASURE", measure_formula)
+      surp_formula <- str_replace_all(str_replace_all(formula_lm, "MEASURE", measure_formula), "SURPRISAL", model_name)
+      vars_in_model <- c(all.vars(as.formula(surp_formula)), 'dataset', 'cond', 'eos_region', 'bos_region')
+      minimal_dataset_a <- et_with_surprisal_split_a %>% select(all_of(vars_in_model)) %>%
+                          filter(dataset == "Filler" & !bos_region & !eos_region)
+      minimal_dataset_a <- minimal_dataset_a[complete.cases(minimal_dataset_a),]
+      
+      minimal_dataset_b <- et_with_surprisal_split_b %>% select(all_of(vars_in_model)) %>%
+                          filter(dataset == "Filler" & !bos_region & !eos_region)
+      minimal_dataset_b <- minimal_dataset_b[complete.cases(minimal_dataset_b),]
+      
+      if(measure == 'regout'){
+        baseline.model_a <- glmer(data=minimal_dataset_a,
+                                    baseline_formula, family='binomial',
+                                   control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+        filler.model_a <- glmer(data=minimal_dataset_a,
+                              surp_formula, family='binomial',
+                              control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+        baseline.model_b <- glmer(data=minimal_dataset_b,
+                                    baseline_formula, family='binomial',
+                                   control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+        filler.model_b <- glmer(data=minimal_dataset_b,
+                              surp_formula, family='binomial',
+                              control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+      }
+      else{
+        baseline.model_a <- lmer(data=minimal_dataset_a,
+                               baseline_formula,
+                               control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+        
+        
+        filler.model_a <- lmer(data=minimal_dataset_a,
+                               surp_formula,
+                               control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+        
+        
+        baseline.model_b <- lmer(data=minimal_dataset_b,
+                               baseline_formula,
+                               control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+      
+        
+        filler.model_b <- lmer(data=minimal_dataset_b,
+                               surp_formula,
+                               control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+      }
+      
+      #print(summary(filler.model_a))
+      #print(summary(filler.model_b))
+      dll_a <- logLik(filler.model_a) - logLik(baseline.model_a)
+      dll_b <- logLik(filler.model_b) - logLik(baseline.model_b)
+      if((nobs(filler.model_b) != nobs(baseline.model_b)) | (nobs(filler.model_a) != nobs(baseline.model_a))){
+        print('Error: baseline and surprisal model differ in number of observations')
+      }
+      writeLines(paste0(measure, ' iteration ', i, ' out of ',  total_iterations, ':', 
+                  '\n\tNum. Observations: ', nobs(filler.model_b)+nobs(filler.model_a), 
+                  '\n\tTotal DLL: ', dll_a+dll_b,
+                  '\n\tPer Obs. DLL: ',(dll_a+dll_b)/((nobs(filler.model_b)+(nobs(filler.model_a))))))
+      splithalf_dlls <- c(splithalf_dlls, dll_a+dll_b)
+      splithalf_num_obs <- c(splithalf_num_obs, nobs(filler.model_b)+nobs(filler.model_a))
+      splithalf_measure_name <- c(splithalf_measure_name, measure)
+      stepi <- stepi + 1
+      setTxtProgressBar(pb,stepi)
+    }
+}
+close(pb)
+
+upper_bound_dlls <- data.frame(measure=splithalf_measure_name, dll=splithalf_dlls, nobs=splithalf_num_obs)
+saveRDS(upper_bound_dlls, '../data/filler_models/upper_bound_dlls.RDS')
+```
+

@@ -1,0 +1,596 @@
+```{r}
+library(plyr)
+library(ggplot2)
+library(ggthemes)
+library(tidyr)
+library(lme4)
+library(lmerTest)
+library(merTools)
+library(stringr)
+library(emmeans)
+library(foreach)
+library(parallel)
+library(doSNOW)
+library(brms)
+library(dplyr)
+library(tidytext)
+library(cowplot)
+library(grid)
+library(png)
+library(ggh4x)
+library(stringr)
+
+
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+
+best_lms <- c('human', 'pythia.70m_step3000_surp', 'gpt2_surp', 'mamba.130m_surp', 'LSTM_800_10m_b_0', 'rnng_topdown_10_2401_surp', 'lstm_surp', 'baseline_surp')
+measures <- c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+```
+weights for lmer results in plots
+```{r}
+filler_model_dlls <- readRDS('../data/filler_models/model_lls.rds')
+filler_model_dlls$model_family <- case_when(str_detect(filler_model_dlls$model, 'pythia') ~ 'pythia.70m_step3000_surp',
+                                            str_detect(filler_model_dlls$model, 'LSTM') ~ 'LSTM_800_10m_b_0',
+                                            str_detect(filler_model_dlls$model, 'lstm') ~ 'lstm_surp',
+                                            str_detect(filler_model_dlls$model, 'rnng') ~ 'rnng_topdown_10_2401_surp',
+                                            str_detect(filler_model_dlls$model, 'gpt2') ~ 'gpt2_surp',
+                                            str_detect(filler_model_dlls$model, 'mamba') ~ 'mamba.130m_surp',
+                                            str_detect(filler_model_dlls$model, 'baseline') ~ 'baseline_surp')
+max_dlls <- filler_model_dlls %>%
+  group_by(model_family, measure) %>%
+  summarize(max_dll = max(dll),
+            count_dll = n())
+max_dlls$max_dll <- max_dlls$max_dll+1
+
+dll_weights <- merge(filler_model_dlls, max_dlls, by=c('model_family', 'measure'))
+dll_weights$dll_scale <- (dll_weights$dll / dll_weights$max_dll) / (dll_weights$count_dll)
+dll_weights[(dll_weights$model_family == 'pythia.70m_step3000_surp') | (dll_weights$model_family == 'LSTM_800_10m_b_0') | (dll_weights$model_family == 'rnng_topdown_10_2401_surp'), 'dll_scale'] <- dll_weights[(dll_weights$model_family == 'pythia.70m_step3000_surp') | (dll_weights$model_family == 'LSTM_800_10m_b_0') | (dll_weights$model_family == 'rnng_topdown_10_2401_surp'), 'dll_scale'] * 10
+dll_weights[(dll_weights$model_family == 'lstm_surp'), 'dll_scale'] <- 0
+dll_weights <- select(dll_weights, c('measure', 'model', 'model_family', 'dll_scale'))
+```
+
+
+Agreement subset - Construct aggregate draw dfs 
+
+```{r}
+rois <- c(0, 1)
+
+agree_all_posteriors <- data.frame(draw_num=numeric(), measure=character(), region=character(), model=character(), unagree=numeric(), agree=numeric(), agree_eff=numeric())
+for (lm in best_lms) {
+  for (measure in measures) {
+    for (roi_offset in rois) {
+      draws_df <- readRDS(paste0('../data/eoi_models/brms/construction_draws_df/Agreement_', measure ,'_', lm, '_p', roi_offset , '_fixedeff_drawsdf.rds'))
+      agree_i <- draws_df$b_Intercept
+      unagree_i <- draws_df$b_Intercept + draws_df$b_agree
+      if(measure == 'regout'){
+        unagree_i = logit2prob(unagree_i) * 100
+        agree_i = logit2prob(agree_i) * 100
+      }
+      agree_eff_i <- unagree_i - agree_i
+      if(measure == 'regout'){
+        agree_eff_i <- ((unagree_i / agree_i) - 1) * 100
+      }
+      
+      agree_all_posteriors <- rbind(agree_all_posteriors, data.frame(draw_num=1:length(unagree_i),
+                                                         measure=rep(measure, length(unagree_i)),
+                                                         region=rep(roi_offset, length(unagree_i)),
+                                                         model=rep(lm, length(unagree_i)),
+                                                         unagree=unagree_i,
+                                                         agree=agree_i,
+                                                         agree_eff=agree_eff_i))
+      
+    }
+  }
+}
+agree_all_posteriors$model <- factor(agree_all_posteriors$model, levels = c("human", "pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", "arehalli_syn_m3_surp", 'lstm_surp', 'baseline_surp'))
+agree_all_posteriors$is_llm <- factor(ifelse(agree_all_posteriors$model == 'human', 'Human', 'Best LLM'), levels = c('Human', 'Best LLM'))
+agree_all_posteriors$dataset <- 'Agreement'
+agree_all_posteriors <- agree_all_posteriors %>%
+  pivot_longer(cols = -c('draw_num', 'measure', 'region', 'model', 'is_llm', 'dataset'), names_to='estimate')
+
+agree_construction_summary_stats <- agree_all_posteriors %>% group_by(measure, region, model, estimate, is_llm) %>%
+  summarize(mean = mean(value),
+            lwr = quantile(value, 0.025),
+            upr= quantile(value, 0.975))
+agree_construction_summary_stats$is_brms <- TRUE
+agree_construction_summary_stats$dll_scale <- 1.0
+agree_construction_summary_stats$model_family <- agree_construction_summary_stats$model
+
+#add LMERs to summary
+agree_lmer <- readRDS('../data/eoi_models/lmer/Agreement_all_effs.rds') %>%
+  subset(model != 'human') %>%
+  mutate(is_brms = FALSE) %>%
+  rename(mean = GPE_mean,
+         lwr = GPE_CIlower,
+         upr = GPE_CIupper,
+         estimate = construction)
+agree_lmer$estimate <- 'agree_eff'
+agree_lmer <- merge(agree_lmer, dll_weights, by = c('measure', 'model'))
+
+
+agree_construction_summary_stats$region <- as.character(agree_construction_summary_stats$region)
+agree_construction_summary_stats <- rbind(agree_construction_summary_stats, agree_lmer)
+
+
+agree_construction_summary_stats[agree_construction_summary_stats$region == 0, 'region'] <- 'Critical'
+agree_construction_summary_stats[agree_construction_summary_stats$region == 1, 'region'] <- 'Spillover'
+```
+
+Attachment subset - Construct aggregate draw dfs
+
+```{r}
+rois <- c(0, 1)
+
+attach_all_posteriors <- data.frame(draw_num=numeric(), measure=character(), region=character(), model=character(), ambig_low=numeric(), ambig_multi=numeric(), ambig_high=numeric(), unambig_low=numeric(), unambig_multi=numeric(), unambig_high=numeric(), attach_eff_low=numeric(), attach_eff_high=numeric())
+for (lm in best_lms) {
+  for (measure in measures) {
+    for (roi_offset in rois) {
+      draws_df <- readRDS(paste0('../data/eoi_models/brms/construction_draws_df/AttachmentAmbiguity_', measure ,'_', lm, '_p', roi_offset , '_fixedeff_drawsdf.rds'))
+      ambig_low_i <- draws_df$b_Intercept + ((-1/2)*draws_df$b_height) + ((2/3)*draws_df$b_ambig)
+      ambig_multi_i <- draws_df$b_Intercept + ((0)*draws_df$b_height) + ((2/3)*draws_df$b_ambig)
+      ambig_high_i <- draws_df$b_Intercept + ((1/2)*draws_df$b_height) + ((2/3)*draws_df$b_ambig)
+      unambig_low_i <- draws_df$b_Intercept + ((-1/2)*draws_df$b_height) + ((-1/3)*draws_df$b_ambig)
+      unambig_multi_i <- draws_df$b_Intercept + ((0)*draws_df$b_height) + ((-1/3)*draws_df$b_ambig)
+      unambig_high_i <- draws_df$b_Intercept + ((1/2)*draws_df$b_height) + ((-1/3)*draws_df$b_ambig)
+      if(measure == 'regout'){
+        ambig_low_i = logit2prob(ambig_low_i) * 100
+        ambig_multi_i = logit2prob(ambig_multi_i) * 100
+        ambig_high_i = logit2prob(ambig_high_i) * 100
+        unambig_low_i = logit2prob(unambig_low_i) * 100
+        unambig_multi_i = logit2prob(unambig_multi_i) * 100
+        unambig_high_i = logit2prob(unambig_high_i) * 100
+      }
+      attach_eff_low_i <- unambig_low_i - ambig_multi_i
+      attach_eff_high_i <- unambig_high_i - ambig_multi_i
+      if(measure == 'regout'){
+        attach_eff_low_i <- ((unambig_low_i / ambig_multi_i) - 1) * 100
+        attach_eff_high_i <- ((unambig_high_i / ambig_multi_i) - 1) * 100
+      }
+      
+      attach_all_posteriors <- rbind(attach_all_posteriors, data.frame(draw_num=1:length(ambig_low_i),
+                                                               measure=rep(measure, length(ambig_low_i)),
+                                                               region=rep(roi_offset, length(ambig_low_i)),
+                                                               model=rep(lm, length(ambig_low_i)),
+                                                               ambig_low=ambig_low_i,
+                                                               ambig_multi=ambig_multi_i,
+                                                               ambig_high=ambig_high_i,
+                                                               unambig_low=unambig_low_i,
+                                                               unambig_multi=unambig_multi_i,
+                                                               unambig_high=unambig_high_i,
+                                                               attach_eff_low=attach_eff_low_i,
+                                                               attach_eff_high=attach_eff_high_i))
+    }
+  }
+}
+attach_all_posteriors$model <- factor(attach_all_posteriors$model, levels = c("human", "pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", "arehalli_syn_m3_surp", 'lstm_surp', 'baseline_surp'))
+attach_all_posteriors$is_llm <- factor(ifelse(attach_all_posteriors$model == 'human', 'Human', 'Best LLM'), levels = c('Human', 'Best LLM'))
+attach_all_posteriors$dataset <- 'AttachmentAmbiguity'
+attach_all_posteriors <- attach_all_posteriors %>%
+  pivot_longer(cols = -c('draw_num', 'measure', 'region', 'model', 'is_llm', 'dataset'), names_to='estimate')
+
+attach_construction_summary_stats <- attach_all_posteriors %>% group_by(measure, region, model, estimate, is_llm) %>%
+  summarize(mean = mean(value),
+            lwr= quantile(value, 0.025),
+            upr = quantile(value, 0.975))
+attach_construction_summary_stats$is_brms <- TRUE
+attach_construction_summary_stats$dll_scale <- 1.0
+attach_construction_summary_stats$model_family <- attach_construction_summary_stats$model
+
+#add LMERs to summary
+attach_lmer <- readRDS('../data/eoi_models/lmer/AttachmentAmbiguity_all_lmer_effs.rds') %>%
+  subset(model != 'human') %>%
+  mutate(is_brms = FALSE) %>%
+  rename(mean = GPE_mean,
+         lwr = GPE_CIlower,
+         upr = GPE_CIupper,
+         estimate = construction)
+attach_lmer[attach_lmer$estimate == 'AttachLow', 'estimate'] <- 'attach_eff_low'
+attach_lmer[attach_lmer$estimate == 'AttachHigh', 'estimate'] <- 'attach_eff_high'
+attach_lmer <- merge(attach_lmer, dll_weights, by = c('measure', 'model'))
+
+attach_construction_summary_stats$region <- as.character(attach_construction_summary_stats$region)
+attach_construction_summary_stats <- rbind(attach_construction_summary_stats, attach_lmer)
+
+
+attach_construction_summary_stats$region <- as.character(attach_construction_summary_stats$region)
+attach_construction_summary_stats[attach_construction_summary_stats$region == 0, 'region'] <- 'Critical'
+attach_construction_summary_stats[attach_construction_summary_stats$region == 1, 'region'] <- 'Spillover'
+```
+
+RC subset - Construct aggregate draw dfs
+
+```{r}
+best_lms <- c('human', 'pythia.70m_step3000_surp', 'gpt2_surp', 'mamba.130m_surp', 'LSTM_800_10m_b_0', 'rnng_topdown_10_2401_surp', 'lstm_surp', 'baseline_surp')
+measures <- c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+rois <- c('det', 'noun', 'verb')
+
+rc_all_posteriors <- data.frame(draw_num=numeric(), measure=character(), region=character(), model=character(), RC_Subj=numeric(), RC_Obj=numeric(), agree_eff=numeric(), RC_Subj_wordpos=numeric(), RC_Obj_wordpos=numeric(), agree_eff_wordpos=numeric())
+for (lm in best_lms) {
+  for (measure in measures) {
+    for (roi_offset in rois) {
+      draws_df <- readRDS(paste0('../data/eoi_models/brms/construction_draws_df/RelativeClause_', measure ,'_', lm, '_p', roi_offset , '_fixedeff_drawsdf.rds'))
+      RC_Subj_i <- draws_df$b_Intercept
+      RC_Obj_i <- draws_df$b_Intercept + draws_df$b_Type_num
+      if(measure == 'regout'){
+        RC_Subj_i = logit2prob(RC_Subj_i) * 100
+        RC_Obj_i = logit2prob(RC_Obj_i) * 100
+      }
+      RC_eff_i <-  RC_Obj_i - RC_Subj_i
+      if(measure == 'regout'){
+        RC_eff_i <- ((RC_Obj_i / RC_Subj_i) - 1) * 100
+      }
+      
+      draws_df_poscorrected <- readRDS(paste0('../data/eoi_models/brms/construction_draws_df/RelativeClauseCorrected_', measure ,'_', lm, '_p', roi_offset , '_fixedeff_drawsdf.rds'))
+      RC_Subj_wordpos_i <- draws_df_poscorrected$b_Intercept
+      RC_Obj_wordpos_i <- draws_df_poscorrected$b_Intercept + draws_df_poscorrected$b_Type_num
+      if(measure == 'regout'){
+        RC_Subj_wordpos_i = RC_Subj_wordpos_i * 100
+        RC_Obj_wordpos_i = RC_Obj_wordpos_i * 100
+      }
+      RC_eff_wordpos_i <-  RC_Obj_wordpos_i - RC_Subj_wordpos_i
+      if(measure == 'regout'){
+        RC_Subj_wordpos_i_corrected <- ((RC_Subj_i + RC_Obj_i) / 2) - (RC_eff_wordpos_i/2)
+        RC_Obj_wordpos_i_corrected <- ((RC_Subj_i + RC_Obj_i) / 2) + (RC_eff_wordpos_i/2)
+        RC_Subj_wordpos_i <- RC_Subj_wordpos_i_corrected
+        RC_Obj_wordpos_i <- RC_Obj_wordpos_i_corrected
+        RC_eff_wordpos_i <- ((RC_Obj_wordpos_i_corrected / RC_Subj_wordpos_i_corrected) - 1) * 100
+      }
+      
+      rc_all_posteriors <- rbind(rc_all_posteriors, data.frame(draw_num=1:length(RC_Subj_i),
+                                                               measure=rep(measure, length(RC_Subj_i)),
+                                                               region=rep(roi_offset, length(RC_Subj_i)),
+                                                               model=rep(lm, length(RC_Subj_i)),
+                                                               RC_Subj=RC_Subj_i,
+                                                               RC_Obj=RC_Obj_i,
+                                                               RC_eff=RC_eff_i,
+                                                               RC_Subj_wordpos=RC_Subj_wordpos_i,
+                                                               RC_Obj_wordpos=RC_Obj_wordpos_i,
+                                                               RC_eff_wordpos=RC_eff_wordpos_i))
+    }
+  }
+}
+rc_all_posteriors$model <- factor(rc_all_posteriors$model, levels = c("human", "pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", "arehalli_syn_m3_surp", 'lstm_surp', 'baseline_surp'))
+rc_all_posteriors$is_llm <- factor(ifelse(rc_all_posteriors$model == 'human', 'Human', 'Best LLM'), levels = c('Human', 'Best LLM'))
+rc_all_posteriors$dataset <- 'RelativeClause'
+rc_all_posteriors[rc_all_posteriors$region=='det', 'region'] <- 'Determiner'
+rc_all_posteriors[rc_all_posteriors$region=='noun', 'region'] <- 'Noun'
+rc_all_posteriors[rc_all_posteriors$region=='verb', 'region'] <- 'Verb'
+rc_all_posteriors <- rc_all_posteriors %>%
+  pivot_longer(cols = -c('draw_num', 'measure', 'region', 'model', 'is_llm', 'dataset'), names_to='estimate')
+
+rc_construction_summary_stats <- rc_all_posteriors %>% group_by(measure, region, model, estimate, is_llm) %>%
+  summarize(mean = mean(value),
+            lwr = quantile(value, 0.025),
+            upr = quantile(value, 0.975))
+
+rc_construction_summary_stats$is_brms <- TRUE
+rc_construction_summary_stats$dll_scale <- 1.0
+rc_construction_summary_stats$model_family <- rc_construction_summary_stats$model
+
+#add LMERs to summary
+rc_lmer <- readRDS('../data/eoi_models/lmer/RelativeClause_all_effs.rds') %>%
+  subset(model != 'human') %>%
+  mutate(is_brms = FALSE) %>%
+  rename(mean = GPE_mean,
+         lwr = GPE_CIlower,
+         upr = GPE_CIupper,
+         estimate = construction)
+rc_lmer$estimate <- 'RC_eff_wordpos'
+rc_lmer[rc_lmer$region=='det', 'region'] <- 'Determiner'
+rc_lmer[rc_lmer$region=='noun', 'region'] <- 'Noun'
+rc_lmer[rc_lmer$region=='verb', 'region'] <- 'Verb'
+rc_lmer <- merge(rc_lmer, dll_weights, by = c('measure', 'model'))
+rc_construction_summary_stats <- rbind(rc_construction_summary_stats, rc_lmer)
+
+
+```
+
+```{r}
+#Classic GP subset
+rois <- c(0, 1)
+all_posteriors_gp <- data.frame(draw_num=numeric(), measure=character(), region=character(), model=character(), MVRR_UAMB=numeric(), MVRR_AMB=numeric(), MVRR_GPE=numeric(), NPS_UAMB=numeric(), NPS_AMB=numeric(), NPS_GPE=numeric(), NPS_UAMB=numeric(), NPS_AMB=numeric(), NPS_GPE=numeric())
+for (lm in best_lms) {
+  for (measure in measures) {
+    for (roi_offset in rois) {
+      if(!(roi_offset == '2-6' & (measure == 'regout' | lm == 'baseline_surp'))){
+        draws_df <- readRDS(paste0('../data/eoi_models/brms/construction_draws_df/classicGP_', measure ,'_', lm, '_p', roi_offset , '_fixedeff_drawsdf.rds'))
+        MVRR_UAMB <- draws_df$b_Intercept
+        MVRR_AMB <- draws_df$b_Intercept + draws_df$b_AMB
+        MVRR_GPE <- MVRR_AMB - MVRR_UAMB
+        NPS_UAMB <- draws_df$b_Intercept + draws_df$b_MVS
+        NPS_AMB <- draws_df$b_Intercept + draws_df$b_MVS + draws_df$b_AMB + draws_df$`b_AMB:MVS`
+        NPS_GPE <- NPS_AMB - NPS_UAMB
+        NPZ_UAMB <- draws_df$b_Intercept + draws_df$b_MVZ
+        NPZ_AMB <- draws_df$b_Intercept + draws_df$b_MVZ + draws_df$b_AMB + draws_df$`b_AMB:MVZ`
+        NPZ_GPE <- NPZ_AMB - NPZ_UAMB
+        AGG_GPE <- ((MVRR_AMB + NPS_AMB + NPZ_AMB)/3) - ((MVRR_UAMB + NPS_UAMB + NPZ_UAMB)/3)
+        if(measure == 'regout'){
+          MVRR_UAMB = logit2prob(MVRR_UAMB)
+          MVRR_AMB = logit2prob(MVRR_AMB)
+          MVRR_GPE <- ((MVRR_AMB-MVRR_UAMB) / MVRR_UAMB)*100
+          NPS_UAMB = logit2prob(NPS_UAMB)
+          NPS_AMB = logit2prob(NPS_AMB)
+          NPS_GPE <- ((NPS_AMB-NPS_UAMB) / NPS_UAMB)*100
+          NPZ_UAMB = logit2prob(NPZ_UAMB)
+          NPZ_AMB = logit2prob(NPZ_AMB)
+          NPZ_GPE <- ((NPZ_AMB-NPZ_UAMB) / NPZ_UAMB)*100
+          AGG_GPE <- (NPZ_GPE + NPS_GPE + MVRR_GPE)/3
+        }
+          
+          
+        all_posteriors_gp <- rbind(all_posteriors_gp, data.frame(draw_num=1:length(MVRR_UAMB),
+                                                           measure=rep(measure, length(MVRR_UAMB)),
+                                                           region=rep(roi_offset, length(MVRR_UAMB)),
+                                                           model=rep(lm, length(MVRR_UAMB)),
+                                                           MVRR_UAMB=MVRR_UAMB,
+                                                           MVRR_AMB=MVRR_AMB,
+                                                           MVRR_GPE=MVRR_GPE,
+                                                           NPS_UAMB=NPS_UAMB,
+                                                           NPS_AMB=NPS_AMB,
+                                                           NPS_GPE=NPS_GPE,
+                                                           NPZ_UAMB=NPZ_UAMB,
+                                                           NPZ_AMB=NPZ_AMB,
+                                                           NPZ_GPE=NPZ_GPE,
+                                                           AGG_GPE=AGG_GPE))
+      }
+    }
+  }
+}
+all_posteriors_gp$model <- factor(all_posteriors_gp$model, levels = c("human", "pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "lstm_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", "arehalli_syn_m3_surp", 'baseline_surp'))
+all_posteriors_gp$is_llm <- factor(ifelse(all_posteriors_gp$model == 'human', 'Human', 'Best LLM'), levels = c('Human', 'Best LLM'))
+all_posteriors_gp$dataset <- 'ClassicGP'
+all_posteriors_gp <- all_posteriors_gp %>%
+  pivot_longer(cols = -c('draw_num', 'measure', 'region', 'model', 'is_llm', 'dataset'), names_to='estimate')
+gp_construction_summary_stats <- all_posteriors_gp %>% group_by(measure, region, model, estimate, is_llm) %>%
+  summarize(mean = mean(value),
+            lwr = quantile(value, 0.025),
+            upr = quantile(value, 0.975))
+gp_construction_summary_stats <- subset(gp_construction_summary_stats, region == 0 | region == 1)
+gp_construction_summary_stats$region <- as.character(gp_construction_summary_stats$region)
+gp_construction_summary_stats$is_brms <- TRUE
+gp_construction_summary_stats$dll_scale <- 1.0
+
+gp_construction_summary_stats$model_family <- gp_construction_summary_stats$model
+
+
+#add LMERs to summary
+gp_lmer <- readRDS('../data/eoi_models/lmer/ClassicGP_all_effs.rds') %>%
+  subset(model != 'human') %>%
+  mutate(is_brms = FALSE,
+         is_llm = TRUE,
+         is_llm = as.factor(is_llm)) %>%
+  rename(mean = GPE_mean,
+         lwr = GPE_CIlower,
+         upr = GPE_CIupper,
+         estimate = construction) %>%
+  mutate(estimate = paste0(estimate, '_GPE'))
+
+gp_lmer <- merge(gp_lmer, dll_weights, by = c('measure', 'model'))
+
+gp_construction_summary_stats <- rbind(gp_construction_summary_stats, gp_lmer)
+
+gp_construction_summary_stats[gp_construction_summary_stats$region == 0, 'region'] <- 'Critical'
+gp_construction_summary_stats[gp_construction_summary_stats$region == 1, 'region'] <- 'Spillover'
+```
+
+```{r}
+#merge all construction summaries into one df
+all_constructions_summaries <- rbind(agree_construction_summary_stats, attach_construction_summary_stats, rc_construction_summary_stats, gp_construction_summary_stats)
+all_constructions_summaries <- all_constructions_summaries %>%
+  rename(mean_est = mean)
+all_constructions_effs_summaries <- subset(all_constructions_summaries, estimate == 'agree_eff' | estimate == 'attach_eff_low' | estimate == 'attach_eff_high' | estimate == 'RC_eff' | estimate == 'RC_eff_wordpos' | estimate == 'MVRR_GPE' | estimate == 'NPS_GPE' | estimate == 'NPZ_GPE' | estimate == 'AGG_GPE')
+
+llm_ordering <- all_constructions_effs_summaries %>%
+  subset(is_brms) %>%
+  mutate(mean_est_order = -mean_est) %>%
+  select(c('model_family', 'mean_est_order'))
+llm_ordering$model <- NULL
+all_constructions_effs_summaries <- merge(all_constructions_effs_summaries, llm_ordering, by = c('estimate', 'region', 'measure', 'model_family'))
+
+
+all_constructions_effs_summaries$region <- as.factor(all_constructions_effs_summaries$region)
+all_constructions_effs_summaries$measure = factor(all_constructions_effs_summaries$measure, levels=c('gzfw', 'gzbk','regout','gpbk','gz','gp'))
+all_constructions_effs_summaries$estimate = factor(all_constructions_effs_summaries$estimate, levels=c("AGG_GPE", "MVRR_GPE",  "NPZ_GPE", "NPS_GPE", "RC_eff", "RC_eff_wordpos", "agree_eff", "attach_eff_high", "attach_eff_low"))
+all_constructions_effs_summaries$model_family = factor(all_constructions_effs_summaries$model_family, levels=c("pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "human", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", "arehalli_syn_m3_surp", 'lstm_surp', 'baseline_surp'))
+
+#add column indicating if row is a human null effect
+all_constructions_effs_summaries$null_eff_human <- FALSE
+all_constructions_effs_summaries[all_constructions_effs_summaries$model == 'human' & all_constructions_effs_summaries$lwr < 0 & all_constructions_effs_summaries$upr > 0, 'null_eff_human'] <- TRUE
+
+saveRDS(subset(all_constructions_effs_summaries, is_brms), '../data/eoi_models/brms/brms_effect_summaries.rds')
+saveRDS(all_constructions_effs_summaries, '../data/eoi_models/all_effect_summaries.rds')
+
+```
+
+```{r}
+
+all_constructions_effs_summaries <- readRDS('all_effect_summaries.rds')
+y_axis_label <- "Effect of Interest: Milliseconds of Reading (ms) or Percent Regressions (%)"
+
+group.colors <- c(human='#000000', pythia.70m_step3000_surp='#CB6BCEFF', gpt2_surp='#468892FF', mamba.130m_surp='#74F3D3FF', LSTM_800_10m_b_0='#FDC067FF', rnng_topdown_10_2401_surp='#AC9ECEFF', lstm_surp='#751C6DFF', baseline_surp='#b3074c')
+full_group_colors <- NULL
+full_group_color_names <- NULL
+for(model_i in c("human", "pythia.70m_step3000_surp", "gpt2_surp", "mamba.130m_surp", "lstm_surp", "LSTM_800_10m_b_0", "rnng_topdown_10_2401_surp", "arehalli_syn_m3_surp", 'baseline_surp')){
+  for(measure_i in c('gz','regout','gp', 'gzfw', 'gzbk', 'gpbk')){
+    for(region_i in c('Critical', 'Spillover', 'Determiner', 'Noun', 'Verb')){
+      for(estimate_i in c("agree_eff", "attach_eff_high", "attach_eff_low", "MVRR_GPE", "NPS_GPE", "NPZ_GPE", "RC_eff", "RC_eff_wordpos", 'AGG_GPE')){
+        full_group_colors <- c(full_group_colors, group.colors[model_i])
+        full_group_color_names <- c(full_group_color_names, paste0(model_i, '___', estimate_i, '___', measure_i, '___', region_i))
+      }
+    }
+  }
+}
+names(full_group_colors) <- full_group_color_names
+
+group_labels <- c("Agreement", "High Attachment", "Low Attachment", "MV/RR\nGarden Path Effect", "NP/S\nGarden Path Effect", "NP/Z\nGarden Path Effect", 'Object vs. Subject\n Relative Clause', 'Aggregate\nGarden Path Effect')
+names(group_labels) <- c("agree_eff", "attach_eff_high", "attach_eff_low", "MVRR_GPE", "NPS_GPE", "NPZ_GPE", "RC_eff_wordpos", 'AGG_GPE')
+measure_labels <- c('Gaze Duration', 'Go-Past Duration', 'Regressions Out', 'Forward\nReading Time', 'Regressive\nGaze Duration', 'Regressive\nGo-Past Time')
+names(measure_labels) <- c('gz', 'gp', 'regout', 'gzfw', 'gzbk', 'gpbk')
+
+
+```
+
+
+```{r}
+plt_data <- all_constructions_effs_summaries %>%
+  subset((estimate == "AGG_GPE" | estimate == "MVRR_GPE" | estimate == "NPS_GPE" | estimate == "NPZ_GPE" | estimate == "RC_eff_wordpos") & (measure == 'gzfw' | measure == 'gzbk' | measure == 'regout' | measure == 'gpbk')) %>%
+  mutate(model_color = reorder_within(model_family, by=mean_est_order, within=list(estimate,measure,region)))
+
+
+plt <- ggplot(data=subset(plt_data, is_brms), aes(
+      x = region,
+      y = mean_est,
+      #color = model_color,
+      alpha = case_when(model_family == "human" & !null_eff_human ~ 1,
+                        model_family == "human" & null_eff_human ~ 0.25,
+                        model_family != "human" ~ 0.7)
+    )) +
+    geom_hline(yintercept=0, 
+               color = 'black', 
+               size=0.5, 
+               alpha=0.5) +
+    geom_errorbar(data=subset(plt_data, model_family == 'human'), aes(ymin = lwr, ymax = upr, alpha = case_when(model_family == "human" & !null_eff_human ~ 0.2, model_family == "human" & null_eff_human ~ 0.075)),
+                    size = 23.5,
+                    width = 0
+                    ) +
+    geom_point(data=subset(plt_data, model_family == 'human' & (!null_eff_human)), size=3) +
+    geom_point(data=subset(plt_data, model_family == 'human' & (null_eff_human)), shape=13, size=3) +
+    geom_line(data=subset(plt_data, model_family == 'human'), aes(group = interaction(model_family, estimate), alpha=0.75), size=0.6, linetype="longdash") +
+    geom_point(data=subset(plt_data, model_family != 'human' & (!is_brms | (model_family == 'baseline_surp'))),
+                aes(alpha=dll_scale, color = model_color),
+                size = 1,
+                shape = 15,
+                position = position_dodge(0.8)) +
+    geom_errorbar(data=subset(plt_data, model_family != 'human' & is_brms), aes(ymin = lwr, ymax = upr, fill = model_color, alpha=ifelse(is_brms, 1, 0)),
+                  color='#444444',
+                  size = .8,
+                  width = .78,
+                  position = position_dodge(0.8),
+                  ) +
+  geom_errorbar(data=subset(plt_data, model_family != 'human' & is_brms), aes(ymin = lwr, ymax = upr, color = model_color,, alpha=ifelse(is_brms, 1, 0)),
+                  size = .7,
+                  width = .75,
+                  position = position_dodge(0.8),
+                  ) +
+    geom_point(data=subset(plt_data, model_family != 'human' & is_brms),
+              aes(alpha=dll_scale, fill = model_color),
+              color='#444444',
+              pch=21,
+              size = 1.75,
+              stroke=0.1,
+              position = position_dodge(0.8)) +
+    scale_alpha_identity() +
+    scale_fill_manual(values = full_group_colors) +
+    scale_color_manual(values = full_group_colors) +
+    labs(x = NULL, y = y_axis_label) +
+    facet_grid(measure ~ estimate, scales = "free", space = "free_x", labeller = labeller(estimate = group_labels, measure=measure_labels), switch="y") +
+    facetted_pos_scales(
+    y = list(
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "%"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right")
+    )) +
+    theme(legend.position="none") +
+    theme(strip.text = element_text(size = 12),
+          axis.text.x=element_text(angle=45,hjust=1,size=12),
+          axis.title.y=element_text(size=12),
+          axis.title.x=element_text(size=12),
+          panel.background = element_rect(fill = "#F2F2F2"))
+  
+legend_grob <- ggdraw() + draw_grob(grid::rasterGrob(png::readPNG("../figures/masterplot_legend.png")))
+legend_plot <- cowplot::plot_grid(
+  legend_grob,
+  plt,
+  ncol = 1,
+  rel_heights = c(1, 35)
+)
+ggsave("../figures/masterplot_w_legend.pdf", legend_plot, width = 12, height = 8, units = "in")
+```
+
+```{r}
+
+
+plt_data <- all_constructions_effs_summaries %>%
+  mutate(model_color = reorder_within(model_family, by=mean_est_order, within=list(estimate,measure,region))) %>%
+  subset(estimate != "RC_eff")
+
+plt <- ggplot(data=subset(plt_data, is_brms), aes(
+      x = region,
+      y = mean_est,
+      #color = model_color,
+      alpha = case_when(model_family == "human" & !null_eff_human ~ 1,
+                        model_family == "human" & null_eff_human ~ 0.25,
+                        model_family != "human" ~ 0.7)
+    )) +
+    geom_hline(yintercept=0, 
+               color = 'black', 
+               size=0.5, 
+               alpha=0.5) +
+    geom_errorbar(data=subset(plt_data, model_family == 'human'), aes(ymin = lwr, ymax = upr, alpha = case_when(model_family == "human" & !null_eff_human ~ 0.2, model_family == "human" & null_eff_human ~ 0.075)),
+                    size = 20.5,
+                    width = 0
+                    ) +
+    geom_point(data=subset(plt_data, model_family == 'human' & (!null_eff_human)), size=3) +
+    geom_point(data=subset(plt_data, model_family == 'human' & (null_eff_human)), shape=13, size=3) +
+    geom_line(data=subset(plt_data, model_family == 'human'), aes(group = interaction(model_family, estimate), alpha=0.75), size=0.6, linetype="longdash") +
+    geom_point(data=subset(plt_data, model_family != 'human' & (!is_brms | (model_family == 'baseline_surp'))),
+                aes(alpha=dll_scale, color = model_color),
+                size = 1,
+                shape = 15,
+                position = position_dodge(0.8)) +
+    geom_errorbar(data=subset(plt_data, model_family != 'human' & is_brms), aes(ymin = lwr, ymax = upr, fill = model_color, alpha=ifelse(is_brms, 1, 0)),
+                  color='#444444',
+                  size = .8,
+                  width = .78,
+                  position = position_dodge(0.8),
+                  ) +
+  geom_errorbar(data=subset(plt_data, model_family != 'human' & is_brms), aes(ymin = lwr, ymax = upr, color = model_color,, alpha=ifelse(is_brms, 1, 0)),
+                  size = .7,
+                  width = .75,
+                  position = position_dodge(0.8),
+                  ) +
+    geom_point(data=subset(plt_data, model_family != 'human' & is_brms),
+              aes(alpha=dll_scale, fill = model_color),
+              color='#444444',
+              pch=21,
+              size = 1.75,
+              stroke=0.1,
+              position = position_dodge(0.8)) +
+    scale_alpha_identity() +
+    scale_fill_manual(values = full_group_colors) +
+    scale_color_manual(values = full_group_colors) +
+    labs(x = "", y = y_axis_label) +
+    facet_grid(measure ~ estimate, scales = "free", space = "free_x", labeller = labeller(estimate = group_labels, measure=measure_labels), switch="y") +
+  facetted_pos_scales(
+    y = list(
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "%"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right"),
+      scale_y_continuous(labels = function(x) paste0(x, "ms"), position = "right")
+    ))  +
+  theme(legend.position="none") +
+    theme(strip.text = element_text(size = 14),
+          axis.text.x=element_text(angle=45,hjust=1,size=14),
+          axis.title.y=element_text(size=14),
+          axis.title.x=element_blank(),
+          panel.background = element_rect(fill = "#F2F2F2"))
+  
+legend_grob <- ggdraw() + draw_grob(grid::rasterGrob(png::readPNG("../figures/masterplot_legend.png")))
+legend_plot <- cowplot::plot_grid(
+  legend_grob,
+  plt,
+  ncol = 1,
+  rel_heights = c(1, 53)
+)
+ggsave("../figures/masterplot_all_w_legend.pdf", legend_plot, width = 16, height = 16, units = "in")
+```
+
+

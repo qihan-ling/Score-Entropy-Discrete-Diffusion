@@ -1,0 +1,305 @@
+
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(cowplot)
+library(tidyr)
+library(lme4)
+library(lmerTest)
+library(stringr)
+library(emmeans)
+library(foreach)
+library(parallel)
+library(doSNOW)
+library(purrr)
+options(dplyr.summarise.inform = FALSE)
+num_multithread_cores <- 5
+```
+
+```{r}
+datasets <- c("Filler", "ClassicGP", "RelativeClause", 
+              "AttachmentAmbiguity", "Agreement")
+#all models
+model_names <- read.csv('../data/surprisals/all_lm_names.csv')$x
+measures <- c('gz', 'gp', 'regout')
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+```
+
+Process raw eyetracking data (make CSV where each row is a single region in a single trial from a single particpant)
+ffd = first fixation duration
+gz = gaze duration
+gp = go-past time
+tt = total reading time
+regout = first pass regressions out
+```{r}
+all_et_data <- readRDS("../data/empirical_reading_data/valid_data_allmeasures_N368.rds")
+measure_names <- colnames(all_et_data)
+measure_names <- measure_names[(substr(measure_names, 0, 3) == "ffd") |
+                                  (substr(measure_names, 0, 2) == "gz") |
+                                 (substr(measure_names, 0, 2) == "gp") |
+                                 (substr(measure_names, 0, 2) == "tt") |
+                                 (substr(measure_names, 0, 5) == "regin") |
+                                 (substr(measure_names, 0, 6) == "regout")]
+all.data <- all_et_data  %>%
+  gather("measure_region", "datum", any_of(measure_names)) %>%
+  separate(measure_region, c("measure", "region"), sep="R") %>%
+  select("seq", "subj", "item", "cond", "measure", "region", "datum", 
+         "ROI", "Session_name", "correct", "List") %>%
+  mutate(region = as.numeric(region)) %>%
+  pivot_wider(id_cols = c("seq", "subj", "item", "cond", "region", "correct", "ROI"), names_from = measure, values_from = datum) %>%
+  mutate(ffd = case_when(gz == 0 ~ NA, .default = ffd),
+         gp = case_when(gz == 0 ~ NA, .default = gp),
+         gz = case_when(gz == 0 ~ NA, .default = gz),
+         dataset = case_when((cond == "FILLER1" | cond == "FILLER2") ~ 'Filler',
+                             (cond == "MVRR_UAMB" | cond == "MVRR_AMB" | cond == "NPS_UAMB" | cond == "NPS_AMB" | cond == "NPZ_UAMB" | cond == "NPZ_AMB") ~ 'ClassicGP',
+                             (cond == "RC_Subj" | cond == "RC_Obj") ~ 'RelativeClause',
+                             (cond == "AttachMulti" | cond == "AttachHigh" | cond == "AttachLow") ~ 'AttachmentAmbiguity',
+                             (cond == "AGREE" | cond == "UNAGREE") ~ 'Agreement')) %>%
+  mutate(rr = tt-gz,
+         regt = gp-gz)
+
+write.csv(all.data, "../data/empirical_reading_data/ET_data_processed_noexclusions.csv")
+
+all.data <- all.data %>% 
+  subset(gz <= 2000 | is.na(gz))
+
+write.csv(all.data, "../data/empirical_reading_data/ET_data_processed.csv")
+```
+
+
+Merge reading data with word surprisals
+```{r}
+get_et_data <- function(et_data_filename) {
+  et.data <- read.csv(et_data_filename) %>% 
+    droplevels() %>% 
+    select(-X)
+  dataset_names <- c("Filler", "ClassicGP", "RelativeClause", 
+                     "AttachmentAmbiguity", "Agreement")
+  
+  et.data[et.data$dataset == 'Filler',]$cond <- 'FILLER'
+  return(et.data)
+}
+
+get_surp_data <- function(model_names) {
+  dataset_names <- c("Filler", "ClassicGP", "RelativeClause", 
+                     "AttachmentAmbiguity", "Agreement")
+  all_surps <- NULL
+  for(dataset_name in dataset_names){
+    curr_surps <- read.csv(paste0("../data/surprisals/items_byword_", 
+                                      dataset_name, '.csv'),
+                               header=TRUE) %>%
+    mutate(word_pos = word_pos + 1,
+           dataset = dataset_name)  #adjust to 1-indexing
+    surp_cols <- c(grep("_surp$", names(curr_surps), value = TRUE), grep("LSTM", names(curr_surps), value = TRUE))
+    excluded_surps <- setdiff(surp_cols, model_names)
+    curr_surps <- curr_surps[,!names(curr_surps) %in% excluded_surps]
+    if(is.null(all_surps)){
+      all_surps <- curr_surps
+    }
+    else{
+      all_surps <- bind_rows(all_surps, curr_surps)
+    }
+  }
+  
+  all_surps$item_factor <- as.factor(all_surps$item)
+  all_surps$punct <- (regexpr('[,.]', all_surps$word) != -1)
+  all_surps$num_bpe_toks <- str_count(all_surps$token, pattern = '\\.') - str_count(all_surps$word, pattern = '\\.') + 1
+  all_surps$item_cond <- paste(as.factor(all_surps$item), all_surps$condition)
+  all_surps <- all_surps %>% mutate(item_factor = as.factor(item),
+                                    punct = (regexpr('[,.]', word) != -1),
+                                    item_cond = paste(item, condition),
+                                    item_len = length(item_cond), .by = item_cond,
+                                    eos = (word_pos == item_len),
+                                    region_prop = word_pos / item_len,
+                                    nf_punct = (punct & !eos))
+  
+  #standardize surprisals to mean 0, sd 1, using only filler surprisals
+  means_sds <- all_surps %>%
+    filter(dataset == "Filler" & word_pos > 1 & !eos) %>%
+    summarise(across(all_of(model_names), list(mean = mean, sd = sd), na.rm = TRUE))
+  write.csv(means_sds, '../data/surprisals/surp_means_sds.csv')
+  all_surps <- all_surps %>%
+    mutate(across(all_of(model_names), 
+                  ~ (. - means_sds[[paste0(cur_column(), "_mean")]]) / means_sds[[paste0(cur_column(), "_sd")]]))
+  
+  all_surps$region_s <- (all_surps$region - mean(subset(all_surps, dataset == "Filler")$region)) / sd(subset(all_surps, dataset == "Filler")$region)
+  all_surps$region_prop_s <- (all_surps$region_prop - mean(subset(all_surps, dataset == "Filler")$region_prop)) / sd(subset(all_surps, dataset == "Filler")$region_prop)
+  
+  return(all_surps)
+}
+
+bind_surps <- function(et_data_filename, model_names) {
+  print('Merging surprisals to RT data')
+  curr_step <- 0
+  pb = txtProgressBar(min = 0, max = 379 + (length(model_names)*18), initial = 0, style = 3) 
+  et <- get_et_data(et_data_filename)
+  curr_step <- curr_step + 27 #update progress bar with approx. time elapsed
+  setTxtProgressBar(pb,curr_step)
+  surps <- get_surp_data(model_names)
+  curr_step <- curr_step + 18 #update progress bar with approx. time elapsed
+  setTxtProgressBar(pb,curr_step)
+  merged <- merge(x=et, y=surps,
+                  by.x=c("item", "cond", "dataset", "region"), by.y=c("item", "condition", "dataset", "word_pos"))
+  rt_means_across_subj <- merged %>% group_by(item, cond, dataset, region) %>%
+    summarize(mean_across_subj_gz = mean(gz, na.rm = TRUE),
+              mean_across_subj_gp = mean(gp, na.rm = TRUE)) %>%
+  mutate(mean_across_subj_gz = ifelse(is.na(mean_across_subj_gz), NA, (mean_across_subj_gz - mean(mean_across_subj_gz, na.rm=T)) / (sd(mean_across_subj_gz, na.rm=T))),
+         mean_across_subj_gp = ifelse(is.na(mean_across_subj_gp), NA, (mean_across_subj_gp - mean(mean_across_subj_gp, na.rm=T)) / (sd(mean_across_subj_gp, na.rm=T))))
+  merged <- merge(x=merged, y=rt_means_across_subj,
+                  by=c("item", "cond", "dataset", "region"))
+  curr_step <- curr_step + 61 #update progress bar with approx. time elapsed
+  setTxtProgressBar(pb,curr_step)
+  with_lags <- merged %>% group_by_at(vars(item, subj, cond)) %>%
+                    mutate(ffd_p1 = lag(ffd, order_by = region), 
+                           ffd_p2 = lag(ffd_p1, order_by = region),
+                           gz_p1 = lag(gz, order_by = region), 
+                           gz_p2 = lag(gz_p1, order_by = region),
+                           gp_p1 = lag(gp, order_by = region), 
+                           gp_p2 = lag(gp_p1, order_by = region),
+                           tt_p1 = lag(tt, order_by = region), 
+                           tt_p2 = lag(tt_p1, order_by = region),
+                           regt_p1 = lag(regt, order_by = region),
+                           regt_p2 = lag(regt_p1, order_by = region),
+                           rr_p1 = lag(rr, order_by = region),
+                           rr_p2 = lag(rr_p1, order_by = region),
+                           regin_p1 = lag(regin, order_by = region), 
+                           regin_p2 = lag(regin_p1, order_by = region),
+                           regout_p1 = lag(regout, order_by = region), 
+                           regout_p2 = lag(regout_p1, order_by = region),
+                           regressed = ((!is.na(regout)) & (regout == 1)),
+                           regressed_p1 = lag(regressed, order_by = region),
+                           regressed_p2 = lag(regressed_p1, order_by = region),
+                           skipped_p1 = (is.na(gz_p1) | gz_p1 == 0),
+                           skipped_p2 = (is.na(gz_p2) | gz_p2 == 0),
+                           nf_punct_p1 = lag(nf_punct, order_by = region),
+                           nf_punct_p2 = lag(nf_punct_p1, order_by = region),
+                           bos = region == 1,
+                           bos_p1 = lag(bos, order_by = region, default = TRUE),
+                           bos_p2 = lag(bos_p1, order_by = region, default = TRUE),
+                           bos_region = (bos | bos_p1 | bos_p2),
+                           eos_n1 = lead(eos, order_by = region, default = TRUE),
+                           eos_n2 = lead(eos_n1, order_by = region, default = TRUE),
+                           eos_region = (eos | eos_n1 | eos_n2),
+                           num_bpe_toks_p1 = lag(num_bpe_toks, order_by=region),
+                           num_bpe_toks_p2 = lag(num_bpe_toks_p1, order_by=region),
+                           length_p1_s = lag(length_s, order_by = region), 
+                           length_p2_s = lag(length_p1_s, order_by = region),
+                           logfreq_p1_s = lag(logfreq_s, order_by = region), 
+                           logfreq_p2_s = lag(logfreq_p1_s, order_by = region),
+                           mean_across_subj_gz_p1 = lag(mean_across_subj_gz, order_by = region),
+                           mean_across_subj_gz_p2 = lag(mean_across_subj_gz_p1, order_by = region),
+                           mean_across_subj_gp_p1 = lag(mean_across_subj_gp, order_by = region),
+                           mean_across_subj_gp_p2 = lag(mean_across_subj_gp_p1, order_by = region),
+                  )
+  curr_step <- curr_step + 220 #update progress bar with approx. time elapsed
+  setTxtProgressBar(pb,curr_step)
+  for(model_name in model_names){
+    surp_model <- model_name
+    surp_p1 <- paste0(surp_model, "_p1")
+    surp_p2 <- paste0(surp_model, "_p2")
+    with_lags <- with_lags %>% group_by_at(vars(item, subj, cond)) %>%
+      mutate(!!surp_p1 := lag(get(surp_model), order_by = region),
+             !!surp_p2 := lag(get(surp_p1), order_by = region))
+    curr_step <- curr_step + 18 #update progress bar with approx. time elapsed
+    setTxtProgressBar(pb,curr_step)
+  }
+  with_lags <- with_lags %>%
+    mutate(sent_length = sapply(str_split(Sentence, " "), length),
+           region_ralign = item_len - region + 1) 
+  curr_step <- curr_step + 53 #update progress bar with approx. time elapsed
+  setTxtProgressBar(pb,curr_step)
+  return(with_lags)
+}
+
+```
+
+```{r}
+et_with_surprisal <- bind_surps("../data/empirical_reading_data/ET_data_processed.csv", model_names)
+saveRDS(et_with_surprisal, "../data/empirical_reading_data/ET_data_processed_w_surprisals.rds")
+```
+
+
+Compare distributions of surprisal in filler sentences and gp sentences
+```{r}
+filler_surps <- read.csv('../data/surprisals/items_byword_Filler.csv') %>% subset(!is.na(logfreq))
+gp_surps <- read.csv('../data/surprisals/items_byword_classicGP.csv') %>% subset(!is.na(logfreq))
+gp_surps$roi_aligned <- gp_surps$disambPosition_0idx - gp_surps$word_pos
+gp_surps$is_roi <- as.factor(gp_surps$roi_aligned == 0)
+plt_gpt2 <- ggplot() +
+  geom_histogram(data = filler_surps, aes(x=gpt2_surp, y = after_stat(count / sum(count))), alpha = 0.5, fill = '#5978DE', bins=100) +
+  geom_histogram(data = gp_surps, aes(x=gpt2_surp, y = after_stat(count / sum(count)), fill = is_roi), alpha = 0.5, bins=100) +
+  labs(x = "Surprisal (bits)", y = 'Count (proporition)', title = 'GPT2') +
+  scale_fill_manual(values = c(`FALSE` = '#D68204', `TRUE` = '#C20000')) +
+  theme(legend.position="none",
+        axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        title=element_text(size=16))
+
+plt_mamba <- ggplot() +
+  geom_histogram(data = filler_surps, aes(x=mamba.130m_surp, y = after_stat(count / sum(count))), alpha = 0.5, fill = '#5978DE', bins=100) +
+  geom_histogram(data = gp_surps, aes(x=mamba.130m_surp, y = after_stat(count / sum(count)), fill = is_roi), alpha = 0.5, bins=100) +
+  labs(x = "Surprisal (bits)", y = 'Count (proporition)', title = 'Mamba') +
+  scale_fill_manual(values = c(`FALSE` = '#D68204', `TRUE` = '#C20000')) +
+  theme(legend.position="none",
+        axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        title=element_text(size=16))
+
+plt_pythia <- ggplot() +
+  geom_histogram(data = filler_surps, aes(x=pythia.70m_step3000_surp, y = after_stat(count / sum(count))), alpha = 0.5, fill = '#5978DE', bins=100) +
+  geom_histogram(data = gp_surps, aes(x=pythia.70m_step3000_surp, y = after_stat(count / sum(count)), fill = is_roi), alpha = 0.5, bins=100) +
+  labs(x = "Surprisal (bits)", y = 'Count (proporition)', title = 'Pythia') +
+  scale_fill_manual(values = c(`FALSE` = '#D68204', `TRUE` = '#C20000')) +
+  theme(legend.position="none",
+        axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        title=element_text(size=16))
+
+plt_vslstm <- ggplot() +
+  geom_histogram(data = filler_surps, aes(x=LSTM_800_10m_b_0, y = after_stat(count / sum(count))), alpha = 0.5, fill = '#5978DE', bins=100) +
+  geom_histogram(data = gp_surps, aes(x=LSTM_800_10m_b_0, y = after_stat(count / sum(count)), fill = is_roi), alpha = 0.5, bins=100) +
+  labs(x = "Surprisal (bits)", y = 'Count (proporition)', title = 'LSTM (vS)') +
+  scale_fill_manual(values = c(`FALSE` = '#D68204', `TRUE` = '#C20000')) +
+  theme(legend.position="none",
+        axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        title=element_text(size=16))
+
+plt_wikilstm <- ggplot() +
+  geom_histogram(data = filler_surps, aes(x=lstm_surp, y = after_stat(count / sum(count))), alpha = 0.5, fill = '#5978DE', bins=100) +
+  geom_histogram(data = gp_surps, aes(x=lstm_surp, y = after_stat(count / sum(count)), fill = is_roi), alpha = 0.5, bins=100) +
+  labs(x = "Surprisal (bits)", y = 'Count (proporition)', title = 'LSTM (G)') +
+  scale_fill_manual(values = c(`FALSE` = '#D68204', `TRUE` = '#C20000')) +
+  theme(legend.position="none",
+        axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        title=element_text(size=16))
+
+plt_rnng <- ggplot() +
+  geom_histogram(data = filler_surps, aes(x=rnng_topdown_10_2401_surp, y = after_stat(count / sum(count))), alpha = 0.5, fill = '#5978DE', bins=100) +
+  geom_histogram(data = gp_surps, aes(x=rnng_topdown_10_2401_surp, y = after_stat(count / sum(count)), fill = is_roi), alpha = 0.5, bins=100) +
+  labs(x = "Surprisal (bits)", y = 'Count (proporition)', title = 'RNNG') +
+  scale_fill_manual(values = c(`FALSE` = '#D68204', `TRUE` = '#C20000')) +
+  theme(legend.position="none",
+        axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        title=element_text(size=16))
+
+legend_plot <- cowplot::plot_grid(
+  plt_gpt2,
+  plt_mamba,
+  plt_pythia,
+  plt_vslstm,
+  plt_wikilstm,
+  plt_rnng,
+  ncol = 2
+)
+ggsave("../figures/all_surp_hists.pdf", legend_plot, width = 12, height = 12, units = "in")
+```
