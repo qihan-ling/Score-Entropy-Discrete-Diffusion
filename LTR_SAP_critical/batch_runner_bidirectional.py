@@ -29,7 +29,13 @@ _repo_root = os.path.join(_this_dir, "..")
 _analysis_dir = os.path.join(_repo_root, "LTR_SAP", "analysis")
 
 sys.path.insert(0, _analysis_dir)
-from utils import get_sap_files, get_subset_name, get_critical_pos_col, load_sap_csv
+from utils import (
+    get_sap_files,
+    get_subset_name,
+    get_critical_pos_col,
+    load_sap_csv,
+    filter_stimuli,
+)
 
 sys.path.insert(0, _this_dir)
 from transformer_bidirectional_baseline import run_bidirectional_baseline
@@ -65,6 +71,13 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--subset", type=str, default=None, help="Process only this subset")
+    parser.add_argument("--condition", type=str, default=None,
+                        help="Restrict to rows whose effective_condition matches "
+                             "(e.g. MVRR_AMB, MVRR_UAMB, AGREE). For ClassicGP, "
+                             "ambiguous=1 rows are remapped from *_UAMB to *_AMB.")
+    parser.add_argument("--ambiguous", type=int, choices=[0, 1], default=None,
+                        help="Optional filter on the stimulus 'ambiguous' flag. "
+                             "No-op for subsets without an 'ambiguous' column.")
     parser.add_argument("--skip_existing", action="store_true")
     parser.add_argument("--pad_length", type=int, default=256)
     parser.add_argument("--track_prefix_scores", default=True, action=argparse.BooleanOptionalAction,
@@ -94,12 +107,23 @@ def main():
         crit_col = get_critical_pos_col(csv_path)
         is_filler = (crit_col is None)
 
+        df = load_sap_csv(csv_path)
+        df = filter_stimuli(df, condition=args.condition, ambiguous=args.ambiguous)
+
+        if len(df) == 0:
+            if args.condition is not None or args.ambiguous is not None:
+                continue
+            print(f"\n[{subset}] no rows after filter; skipping")
+            continue
+
         print(f"\n{'='*70}")
         print(f"Subset: {subset} ({'filler - all positions' if is_filler else f'critical window [{EXPERIMENTAL_OFFSETS[0]:+d}..{EXPERIMENTAL_OFFSETS[-1]:+d}]'})")
         print(f"  Experiment: bidirectional_baseline (full sentence context)")
+        if args.condition is not None:
+            print(f"  Condition filter: {args.condition}")
+        if args.ambiguous is not None:
+            print(f"  Ambiguous filter: {args.ambiguous}")
         print(f"{'='*70}\n")
-
-        df = load_sap_csv(csv_path)
 
         for _, row in df.iterrows():
             item_id = row.get("item", row.get("item#_in_Provo", None))
@@ -107,8 +131,9 @@ def main():
             words = sentence.split()
             n_words = len(words)
 
-            cond_col = "condition" if "condition" in row.index else None
-            condition = row[cond_col] if cond_col else None
+            condition = row.get("condition") if "condition" in row.index else None
+            if condition is None or (isinstance(condition, float) and condition != condition):
+                condition = None
 
             if is_filler:
                 for wpos in range(1, n_words + 1):

@@ -102,6 +102,29 @@ def get_condition_col(csv_path):
     return CONDITION_COLUMN.get(stem)
 
 
+def filter_stimuli(df, condition=None, ambiguous=None):
+    """Filter a SAP stimuli DataFrame by condition and/or ambiguous flag.
+
+    Used by the batch runners to support per-condition sbatch parallelism via
+    --condition and --ambiguous CLI flags. Either/both filters can be None to
+    skip. `ambiguous` is ignored if the CSV has no 'ambiguous' column, so
+    passing `--ambiguous 0` to a non-ClassicGP subset is a harmless no-op.
+
+    Args:
+        df: DataFrame loaded via load_sap_csv.
+        condition: optional str; matched against the 'condition' column.
+        ambiguous: optional int (0 or 1); matched against the 'ambiguous' column.
+
+    Returns:
+        Filtered DataFrame (not copied).
+    """
+    if condition is not None and "condition" in df.columns:
+        df = df[df["condition"] == condition]
+    if ambiguous is not None and "ambiguous" in df.columns:
+        df = df[df["ambiguous"].astype(int) == int(ambiguous)]
+    return df
+
+
 def iter_sap_items(csv_path):
     """Iterate over (item_number, condition, disambPos, sentence) from a SAP CSV.
 
