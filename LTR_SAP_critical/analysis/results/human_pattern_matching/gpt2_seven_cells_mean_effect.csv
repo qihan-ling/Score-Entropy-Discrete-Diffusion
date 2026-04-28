@@ -1,0 +1,8 @@
+cell_key,subset,contrast,cond_a,cond_b,gpt2_cond_a_minus_b_mean_surprisal,n_items_in_pooled_effect
+Agr,Agreement,UNAGREE-AGREE,UNAGREE,AGREE,0.01647082302305431,18
+MVRR,ClassicGP,MVRR_AMB-MVRR_UAMB,MVRR_AMB,MVRR_UAMB,-0.09196148564418156,24
+NPZ,ClassicGP,NPZ_AMB-NPZ_UAMB,NPZ_AMB,NPZ_UAMB,-0.03750013808409371,24
+NPS,ClassicGP,NPS_AMB-NPS_UAMB,NPS_AMB,NPS_UAMB,-0.07841567570964496,24
+RC,RelativeClause,RC_Obj-RC_Subj,RC_Obj,RC_Subj,-4.84033514202262,24
+HiAt,AttachmentAmbiguity,AttachHigh-AttachMulti,AttachHigh,AttachMulti,-0.019165014641152483,24
+LowA,AttachmentAmbiguity,AttachLow-AttachMulti,AttachLow,AttachMulti,-0.0023073415634118446,24
