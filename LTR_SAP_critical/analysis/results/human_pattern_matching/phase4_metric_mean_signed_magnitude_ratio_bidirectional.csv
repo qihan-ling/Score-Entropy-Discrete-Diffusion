@@ -1,0 +1,17 @@
+metric,mean_signed_magnitude_ratio
+argmax_flips,-0.01892019969496862
+argmax_settle_step,-0.004681472078173302
+cumulative_kl,-0.017562688595634663
+ent_auc,-0.01553825257260404
+ent_end,-0.05614209979405144
+ent_tail_mean,-0.0475584582727634
+final_sampler_p_target,-0.012004873649808932
+final_surprisal,-0.0038040569893807194
+final_syntactic_rank,-0.033063999899342146
+max_sampler_kl_value,0.1228084662310268
+sampler_conv_step_p50,
+sampler_cumulative_kl,0.025615296136659433
+sampler_p_target_end,-0.012004873649808932
+sem_lock_step,0.0013052410542483046
+syn_rank_end,-0.033063999899342146
+total_kl,-0.017324368338243794

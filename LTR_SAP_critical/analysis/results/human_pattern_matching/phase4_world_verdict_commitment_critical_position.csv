@@ -1,0 +1,8 @@
+source,metric,human_measure,avg_ratio_improvement_easy_contrasts,avg_ratio_improvement_hard_contrasts,avg_magnitude_ratio_filler_easy,avg_magnitude_ratio_subset_easy,avg_magnitude_ratio_filler_hard,world1_evidence,world2_evidence,both_fail,n_easy_cells,n_hard_cells
+critical_position,steps_taken,SPR_RT,0.1670074116648172,1.0507385728097296,0.3004124173669944,0.07543412021177427,0.029382381342468254,False,False,False,2,5
+critical_position,final_surprisal,SPR_RT,0.332289281898563,0.5154506075396468,1.0619748698589093,0.21845724014147266,0.04986644598356066,False,False,False,2,5
+critical_position,final_entropy,SPR_RT,1.4829100641313375,4.040901305933853,0.24719021500612476,0.21375005715352197,0.0067660859807629325,False,False,False,2,5
+critical_position,final_sampler_entropy,SPR_RT,0.5493025611853908,0.8891051307168901,0.8505150392904167,0.436867572203886,0.04063273996885205,False,False,False,2,5
+critical_position,final_sampler_p_target,SPR_RT,0.5503090199238718,16.801450429008828,0.2745772563757209,0.08989151711608134,0.0023741784696348278,False,False,False,2,5
+critical_position,cumulative_kl,SPR_RT,2.9114528979057837,20.747530883421355,0.19751309029551875,0.2083724437840654,0.0071725367202260274,False,False,False,2,5
+critical_position,sampler_cumulative_kl,SPR_RT,1.1321527580276507,2.4154546158019423,0.19010197173893748,0.2551429884319148,0.029284648795136658,True,False,False,2,5

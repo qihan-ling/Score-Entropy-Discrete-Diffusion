@@ -1,0 +1,13 @@
+metric,mean_signed_magnitude_ratio
+argmax_flips,-0.001377093747843154
+argmax_settle_step,0.03740881028834728
+ent_cliff_magnitude,-0.03716957820180564
+final_semantic_rank,-0.21425795343647017
+final_syntactic_rank,-0.0904955745388084
+max_sampler_kl_step,0.0333215871567187
+max_sampler_kl_value,0.08692756062469542
+sampler_conv_step_p50,
+sampler_cumulative_kl,-0.08827661865408008
+syn_rank_end,-0.0904955745388084
+top5_jaccard_mean,0.013610048413412063
+total_sampler_kl,-0.07965589625641846
